@@ -5,9 +5,6 @@
 
 - lock qs
 
-- swap cluster
-    - with traits
-
 - load / save
 
 - settings

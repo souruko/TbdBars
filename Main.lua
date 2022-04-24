@@ -10,69 +10,89 @@ import "TbdBars.Elements"
 -------------------------------------------------------------------
 -- to be deleted
 -------------------------------------------------------------------
-local data = {}
+Data = {}
 
-data[RED] = {}
+Data[TRAIT_LINE.Red] = {}
 
-data[RED][1] = {}
-data[RED][1].left = 500
-data[RED][1].top = 500
-data[RED][1].width = 10
-data[RED][1].height = 2
-data[RED][1].color = Turbine.UI.Color.Black
-data[RED][1].quickslots = {}
-
-for i = 1, 20 do
-
-    data[RED][1].quickslots[i] = {}
-    data[RED][1].quickslots[i].Type = Turbine.UI.Lotro.ShortcutType.Skill
-    data[RED][1].quickslots[i].Data = "0x700031FA"
-
-end
-
-data[RED][2] = {}
-data[RED][2].left = 1000
-data[RED][2].top = 600
-data[RED][2].width = 5
-data[RED][2].height = 3
-data[RED][2].color = Turbine.UI.Color.Red
-data[RED][2].quickslots = {}
+Data[TRAIT_LINE.Red][1] = {}
+Data[TRAIT_LINE.Red][1].name = "ghj"
+Data[TRAIT_LINE.Red][1].left = 500
+Data[TRAIT_LINE.Red][1].top = 500
+Data[TRAIT_LINE.Red][1].width = 10
+Data[TRAIT_LINE.Red][1].height = 2
+Data[TRAIT_LINE.Red][1].color = Turbine.UI.Color.Black
+Data[TRAIT_LINE.Red][1].quickslots = {}
+Data[TRAIT_LINE.Red][1].opacity = 1
 
 for i = 1, 20 do
 
-    data[RED][2].quickslots[i] = {}
-    -- data[RED][2].quickslots[i].Type = Turbine.UI.Lotro.ShortcutType.Skill
-    -- data[RED][2].quickslots[i].Data = "0x700031FA"
+    Data[TRAIT_LINE.Red][1].quickslots[i] = {}
+    Data[TRAIT_LINE.Red][1].quickslots[i].Type = Turbine.UI.Lotro.ShortcutType.Skill
+    Data[TRAIT_LINE.Red][1].quickslots[i].Data = "0x700031FA"
+
+end
+
+Data[TRAIT_LINE.Red][2] = {}
+Data[TRAIT_LINE.Red][2].name = "fghj"
+Data[TRAIT_LINE.Red][2].left = 1000
+Data[TRAIT_LINE.Red][2].top = 600
+Data[TRAIT_LINE.Red][2].width = 5
+Data[TRAIT_LINE.Red][2].height = 3
+Data[TRAIT_LINE.Red][2].color = Turbine.UI.Color.Red
+Data[TRAIT_LINE.Red][2].quickslots = {}
+Data[TRAIT_LINE.Red][2].opacity = 1
+
+for i = 1, 20 do
+
+    Data[TRAIT_LINE.Red][2].quickslots[i] = {}
 
 end
 
 
 
-data[YELLOW] = {}
+Data[TRAIT_LINE.Yellow] = {}
 
-data[YELLOW][1] = {}
-data[YELLOW][1].left = 500
-data[YELLOW][1].top = 500
-data[YELLOW][1].width = 10
-data[YELLOW][1].height = 2
-data[YELLOW][1].color = Turbine.UI.Color.Blue
+Data[TRAIT_LINE.Yellow][1] = {}
+Data[TRAIT_LINE.Yellow][1].name = "gzhj"
+Data[TRAIT_LINE.Yellow][1].left = 500
+Data[TRAIT_LINE.Yellow][1].top = 1000
+Data[TRAIT_LINE.Yellow][1].width = 10
+Data[TRAIT_LINE.Yellow][1].height = 2
+Data[TRAIT_LINE.Yellow][1].color = Turbine.UI.Color.Blue
+Data[TRAIT_LINE.Yellow][1].opacity = 1
+Data[TRAIT_LINE.Yellow][1].quickslots = {}
 
+for i = 1, 20 do
 
-data[YELLOW][2] = {}
-data[YELLOW][2].left = 1000
-data[YELLOW][2].top = 600
-data[YELLOW][2].width = 5
-data[YELLOW][2].height = 3
-data[YELLOW][2].color = Turbine.UI.Color.Orange
+    Data[TRAIT_LINE.Yellow][1].quickslots[i] = {}
 
-data[BLUE] = {}
+end
 
-data.activ = RED
+Data[TRAIT_LINE.Yellow][2] = {}
+Data[TRAIT_LINE.Yellow][2].name = "1000"
+Data[TRAIT_LINE.Yellow][2].left = 1000
+Data[TRAIT_LINE.Yellow][2].top = 1000
+Data[TRAIT_LINE.Yellow][2].width = 5
+Data[TRAIT_LINE.Yellow][2].height = 3
+Data[TRAIT_LINE.Yellow][2].color = Turbine.UI.Color.Orange
+Data[TRAIT_LINE.Yellow][2].opacity = 1
+Data[TRAIT_LINE.Yellow][2].quickslots = {}
+
+for i = 1, 20 do
+
+    Data[TRAIT_LINE.Yellow][2].quickslots[i] = {}
+
+end
+
+Data[TRAIT_LINE.Blue] = {}
+
+Data.activ = TRAIT_LINE.Red
 -------------------------------------------------------------------
 -- to be deleted
 -------------------------------------------------------------------
 
--- load up
 
 
-Activ_Cluster = Elements.Cluster( data[data.activ] )
+Activ_Cluster = Elements.Cluster( Data[Data.activ] )
+import "TbdBars.TraitlineChange"
+import "TbdBars.ChatCommands"
