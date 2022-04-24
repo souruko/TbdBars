@@ -60,7 +60,7 @@ function QuickslotWindow:Constructor(data, index)
 	self.move_header.MouseUp = function( sender, args )
 		if args.Button == Turbine.UI.MouseButton.Left then
 			self.dragging = false
-            Save()
+
 		end
     end
 
@@ -75,7 +75,7 @@ function QuickslotWindow:Constructor(data, index)
     self.background = Turbine.UI.Window()
     self.background:SetParent(self)
     self.background:SetPosition(0, move_header_height)
-    self.background:SetBackColor(self.data.color)
+    self.background:SetBackColor( Utils.ColorFix( self.data.color ) )
     self.background:SetSize(width, height)
     self.background:SetMouseVisible(true)
 
@@ -88,6 +88,15 @@ function QuickslotWindow:Constructor(data, index)
 
 end
 
+function QuickslotWindow:QSDataChanged(index, type, data)
+    
+    self.data.quickslots[index] = {}
+    self.data.quickslots[index].Type = type
+    self.data.quickslots[index].Data = data
+
+    Save()
+
+end
 
 function QuickslotWindow:Move( state )
 
@@ -127,13 +136,23 @@ function QuickslotWindow:CreateQuickslots()
 
             local left = FRAME + ( (j - 1) * QS_SIZE )
             local top = FRAME + ( (i - 1) * QS_SIZE )
+            local index = #self.quickslots + 1
 
-            self.quickslots[#self.quickslots + 1] = Turbine.UI.Lotro.Quickslot()
-            self.quickslots[#self.quickslots]:SetParent(self.background)
-            self.quickslots[#self.quickslots]:SetPosition(left, top)
+            self.quickslots[index] = Turbine.UI.Lotro.Quickslot()
+            self.quickslots[index]:SetParent(self.background)
+            self.quickslots[index]:SetPosition(left, top)
+            self.quickslots[index].index = index
+            self.quickslots[index].window = self
             
-            if self.data.quickslots[#self.quickslots] ~= nil then
-                self.quickslots[#self.quickslots]:SetShortcut( Turbine.UI.Lotro.Shortcut( self.data.quickslots[#self.quickslots].Type, self.data.quickslots[#self.quickslots].Data ) )
+            if self.data.quickslots[index] ~= nil then
+                self.quickslots[index]:SetShortcut( Turbine.UI.Lotro.Shortcut( self.data.quickslots[index].Type, self.data.quickslots[index].Data ) )
+            end
+
+            self.quickslots[index].ShortcutChanged = function (sender, args)
+
+                local shortcut = sender:GetShortcut()
+                sender.window:QSDataChanged(sender.index, shortcut:GetType(), shortcut:GetData())
+
             end
 
         end
@@ -147,7 +166,7 @@ function QuickslotWindow:Closing()
     self:SetVisible(false)
     self.background:SetVisible(false)
     self.move_header:SetVisible(false)
-    
+
     self.background:Close()
     self.move_header:Close()
     

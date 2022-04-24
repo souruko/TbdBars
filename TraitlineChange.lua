@@ -5,6 +5,8 @@ function TraitLineChanged( new_traitline )
     Activ_Cluster:Close()
     Activ_Cluster = nil
     Activ_Cluster = Elements.Cluster(Data[ Data.activ ])
+
+    Save()
     
 end
 

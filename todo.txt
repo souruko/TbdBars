@@ -1,10 +1,6 @@
 
-- data struktur
-
 - lock qs
 
-- load / save
+- settings?
 
-- settings
-
-- visibility trigger
+- visibility trigger?

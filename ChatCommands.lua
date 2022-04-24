@@ -41,7 +41,10 @@ function command:Execute( _, str )
         Activ_Cluster:Reload()
 
     elseif cmd == "move" then
+
         Activ_Cluster:Move()
+        Save()
+
     end
 
 end

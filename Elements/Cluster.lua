@@ -28,8 +28,6 @@ function Cluster:Move()
         window:Move(self.moving)
     end
 
-    self.windows = {}
-
 end
 
 function Cluster:Reload()
@@ -55,6 +53,8 @@ function Cluster:CloseWindows()
     for index, window in pairs(self.windows) do
         window:Close()
     end
+
+    self.windows = {}
 
 end
 
