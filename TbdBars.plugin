@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<Plugin> 
+	<Information>
+		<Name>TbdBars</Name>
+		<Author>Souru</Author>
+		<Version>0.0.1</Version>
+		<Description>...</Description>
+	</Information>
+	<Package>Souru.TbdBars.Main</Package>
+	<Configuration Apartment="TbdBars" />
+</Plugin>
