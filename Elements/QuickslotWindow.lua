@@ -56,7 +56,7 @@ function QuickslotWindow:Constructor(data, index)
             self.move_label:SetText("<" .. self.index .. "> left: " .. self:GetLeft() .. " top: " .. self:GetTop())
   		end
 	end
-	
+
 	self.move_header.MouseUp = function( sender, args )
 		if args.Button == Turbine.UI.MouseButton.Left then
 			self.dragging = false
@@ -67,7 +67,7 @@ function QuickslotWindow:Constructor(data, index)
     self.move_label = Turbine.UI.Label()
     self.move_label:SetParent(self.move_header)
     self.move_label:SetSize(move_header_width, move_header_height)
-    self.move_label:SetTextAlignment(Turbine.UI.ContentAlignment.MiddleCenter)
+    self.move_label:SetTextAlignment(Turbine.UI.ContentAlignment.MiddleLeft)
     self.move_label:SetForeColor(Turbine.UI.Color.Black)
     self.move_label:SetText("<" .. self.index .. "> left: " .. self:GetLeft() .. " top: " .. self:GetTop())
     self.move_label:SetMouseVisible(false)
@@ -139,5 +139,16 @@ function QuickslotWindow:CreateQuickslots()
         end
 
     end
+    
+end
+
+function QuickslotWindow:Closing()
+
+    self:SetVisible(false)
+    self.background:SetVisible(false)
+    self.move_header:SetVisible(false)
+    
+    self.background:Close()
+    self.move_header:Close()
     
 end
