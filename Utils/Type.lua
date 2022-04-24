@@ -1,6 +1,4 @@
 
-import "Souru.TbdBars.Class";
-
 --[[
 
 This class is used to provide type information about an object in lua.

@@ -1,0 +1,15 @@
+
+- data struktur
+
+- moving
+
+- lock qs
+
+- swap cluster
+    - with traits
+
+- load / save
+
+- settings
+
+- visibility trigger

@@ -1,2 +1,2 @@
-import "Souru.Utils.Class.lua"
-import "Souru.Utils.Type.lua"
+import "TbdBars.Utils.Class"
+import "TbdBars.Utils.Type"

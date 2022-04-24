@@ -34,5 +34,5 @@
             "pattern": "**/SkinDefinition.xml",
             "systemId": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.10\\xsds\\lotro-skin.xsd"
         }
-    ],
+    ]
 }
