@@ -31,7 +31,7 @@ function command:Execute( _, str )
     elseif cmd == "add" then
 
         if list[ 2 ] == nil or string.len( list[ 2 ] ) == 0 or list[ 3 ] == nil or string.len( list[ 3 ] ) == 0 then
-            Turbine.Shell.WriteLine( "Missing Index.")
+            Turbine.Shell.WriteLine( "Missing Parameter (width/height).")
             return
         end
         local width = tonumber(list[ 2 ])
@@ -44,6 +44,38 @@ function command:Execute( _, str )
 
         Activ_Cluster:Move()
         Save()
+
+    elseif cmd == "layout" then
+
+        if list[ 2 ] == nil or string.len( list[ 2 ] ) == 0 then
+            Turbine.Shell.WriteLine( "Missing Parameter (load/save/overview).")
+            return
+        end
+
+        if list[2] == "load" then
+
+            if list[ 3 ] == nil or string.len( list[ 3 ] ) == 0 then
+                Turbine.Shell.WriteLine( "Missing Layout Name.")
+                return
+            end
+
+            LoadLayout(list[3])
+
+            
+        elseif list[2] == "save" then
+
+            if list[ 3 ] == nil or string.len( list[ 3 ] ) == 0 then
+                Turbine.Shell.WriteLine( "Missing Layout Name.")
+                return
+            end
+
+            SaveLayout(list[3])
+
+        elseif list[2] == "overview" then
+
+            PrintLayout()
+
+        end
 
     end
 

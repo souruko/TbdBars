@@ -1,12 +1,23 @@
 
 function Save()
 
-    -- if Locale == LANGUAGE.English then
-    --     Turbine.PluginData.Save(Turbine.DataScope.Character, "tbdbars", Data)
-    -- else
-    --     local converted = ConvertToEuro(Data)
-    --     Turbine.PluginData.Save(Turbine.DataScope.Character, "tbdbars", converted)
-    -- end
+    if Locale == LANGUAGE.English then
+        Turbine.PluginData.Save(Turbine.DataScope.Character, "tbdbars", Data)
+    else
+        local converted = ConvertToEuro(Data)
+        Turbine.PluginData.Save(Turbine.DataScope.Character, "tbdbars", converted)
+    end
+    
+end
+
+function SaveLayoutData()
+
+    if Locale == LANGUAGE.English then
+        Turbine.PluginData.Save(Turbine.DataScope.Account, "tbdbars_layout", Layout)
+    else
+        local converted = ConvertToEuro(Layout)
+        Turbine.PluginData.Save(Turbine.DataScope.Account, "tbdbars_layout", converted)
+    end
     
 end
 
@@ -64,7 +75,6 @@ if Turbine.PluginData.Load(Turbine.DataScope.Character, "tbdbars") ~= nil then
     if Locale ~= LANGUAGE.English then
         Data = ConvertFromEuro(Data)
     end
-    Turbine.Shell.WriteLine(Data[2][1].width)
 
 else
 
@@ -77,3 +87,18 @@ else
     Data.activ = TRAIT_LINE.Red
 
 end
+
+if Turbine.PluginData.Load(Turbine.DataScope.Account, "tbdbars_layout") ~= nil then
+
+    Layout = Turbine.PluginData.Load(Turbine.DataScope.Account, "tbdbars_layout")
+    if Locale ~= LANGUAGE.English then
+        Layout = ConvertFromEuro(Layout)
+    end
+
+else
+
+    Layout = {}
+
+end
+
+

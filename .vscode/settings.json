@@ -9,30 +9,30 @@
         "?/init.lua",
         "?/__init__.lua"
     ],
-    "Lua.runtime.plugin": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.10\\Lua\\Plugin\\plugin.lua",
+    "Lua.runtime.plugin": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.12\\resources\\Lua\\Plugin\\plugin.lua",
     "Lua.workspace.library": [
-        "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.10\\Lua\\EmmyLua\\Turbine"
+        "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.12\\resources\\Lua\\EmmyLua\\Turbine"
     ],
     "xml.fileAssociations": [
         {
             "pattern": "**/*.plugin",
-            "systemId": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.10\\xsds\\lotroplugin.xsd"
+            "systemId": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.12\\resources\\xsds\\lotroplugin.xsd"
         },
         {
             "pattern": "**/*.plugincompendium",
-            "systemId": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.10\\xsds\\plugincompendium.xsd"
+            "systemId": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.12\\resources\\xsds\\plugincompendium.xsd"
         },
         {
             "pattern": "**/*.musiccompendium",
-            "systemId": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.10\\xsds\\musiccompendium.xsd"
+            "systemId": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.12\\resources\\xsds\\musiccompendium.xsd"
         },
         {
             "pattern": "**/*.skincompendium",
-            "systemId": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.10\\xsds\\skincompendium.xsd"
+            "systemId": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.12\\resources\\xsds\\skincompendium.xsd"
         },
         {
             "pattern": "**/SkinDefinition.xml",
-            "systemId": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.10\\xsds\\lotro-skin.xsd"
+            "systemId": "c:\\Users\\souru\\.vscode\\extensions\\lunarwtr.lotro-api-1.0.12\\resources\\xsds\\lotro-skin.xsd"
         }
     ]
 }

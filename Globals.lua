@@ -1,5 +1,7 @@
 Data = nil
 
+Layout = nil
+
 -- find used client G.language
 Locale = 1
 if Turbine.Shell.IsCommand("hilfe") then
