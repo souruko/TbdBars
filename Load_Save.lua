@@ -85,6 +85,7 @@ else
     Data[TRAIT_LINE.Blue] = {}
 
     Data.activ = TRAIT_LINE.Red
+    Data.version = 1
 
 end
 

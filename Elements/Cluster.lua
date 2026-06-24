@@ -1,6 +1,6 @@
 
 --[[
-    class to combine multiple qickslotwindows 
+    class to combine multiple qickslotwindows
 
     data:
     - list of qickslotwindows
@@ -13,6 +13,7 @@ function Cluster:Constructor(data)
 
     self.data = data
     self.moving = false
+    self.locked = false
 
     self.windows = {}
 
@@ -30,11 +31,39 @@ function Cluster:Move()
 
 end
 
+function Cluster:Lock()
+
+    self.locked = not(self.locked)
+
+    for index, window in pairs(self.windows) do
+        window:SetLocked(self.locked)
+    end
+
+    if self.locked then
+        Turbine.Shell.WriteLine("Quickslots locked.")
+    else
+        Turbine.Shell.WriteLine("Quickslots unlocked.")
+    end
+
+end
+
 function Cluster:Reload()
 
     self:CloseWindows()
     self:CreateWindows()
-    
+
+    if self.moving then
+        for index, window in pairs(self.windows) do
+            window:Move(true)
+        end
+    end
+
+    if self.locked then
+        for index, window in pairs(self.windows) do
+            window:SetLocked(true)
+        end
+    end
+
 end
 
 function Cluster:CreateWindows()

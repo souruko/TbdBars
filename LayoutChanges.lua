@@ -56,7 +56,7 @@ function LoadLayout(name)
 
         Save()
 
-        Turbine.Shell.WriteLine("Loaded Layout <" .. name .. "> as Acitv.")
+        Turbine.Shell.WriteLine("Loaded Layout <" .. name .. "> as Active.")
 
     
     else
@@ -90,7 +90,7 @@ end
 function PrintLayout()
 
     Turbine.Shell.WriteLine("Saved Layout Overview:")
-    
+
     local counter = 0;
     for key, value in pairs(Layout) do
         counter = counter + 1;
@@ -99,6 +99,18 @@ function PrintLayout()
 
     if counter == 0 then
         Turbine.Shell.WriteLine("- No Layouts Saved. -")
+    end
+
+end
+
+function DeleteLayout(name)
+
+    if Layout[name] ~= nil then
+        Layout[name] = nil
+        SaveLayoutData()
+        Turbine.Shell.WriteLine("Deleted layout: " .. name .. ".")
+    else
+        Turbine.Shell.WriteLine("No layout with the name <" .. name .. "> saved.")
     end
 
 end

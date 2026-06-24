@@ -83,6 +83,7 @@ function QuickslotWindow:Constructor(data, index)
 
     self:SetVisible(true)
     self.background:SetVisible(true)
+    self.background:SetOpacity(self.data.opacity)
     self.move_header:SetVisible(false)
 
 
@@ -101,7 +102,24 @@ end
 function QuickslotWindow:Move( state )
 
     self.move_header:SetVisible(state)
-    
+
+end
+
+function QuickslotWindow:SetLocked( state )
+
+    self.locked = state
+
+    for key, quickslot in ipairs(self.quickslots) do
+        if state then
+            quickslot.ShortcutChanged = function() end
+        else
+            quickslot.ShortcutChanged = function(sender, args)
+                local shortcut = sender:GetShortcut()
+                sender.window:QSDataChanged(sender.index, shortcut:GetType(), shortcut:GetData())
+            end
+        end
+    end
+
 end
 
 
