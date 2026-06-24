@@ -3,7 +3,7 @@
 	<Information>
 		<Name>TbdBars</Name>
 		<Author>Souru</Author>
-		<Version>0.0.1</Version>
+		<Version>0.0.2</Version>
 		<Description>...</Description>
 	</Information>
 	<Package>TbdBars.Main</Package>
