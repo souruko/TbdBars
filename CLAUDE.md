@@ -24,22 +24,48 @@ The primary working directory **is** the live game plugin directory (via Steam P
 7. `ChatCommands.lua` — registers `/tbd` and `/tbdbars` shell commands
 
 **Data model:**
-- `Data` (character save): a table keyed by trait line number (1=Red, 2=Yellow, 3=Blue). Each entry is a list of window data tables with fields `left`, `top`, `width` (in quickslot units), `height`, `color`, `opacity`, `quickslots`.
+- `Data` (character save): a table keyed by trait line number (`TRAIT_LINE` in `Globals.lua` — 1=Blue, 2=Red, 3=Yellow). Each entry is a list of window data tables with fields `left`, `top`, `width` (in quickslot units), `height`, `color`, `opacity`, `quickslots`.
 - `Layout` (account save): named layout snapshots (window geometry only, no quickslot assignments).
 - `Data.activ`: the currently active trait line index.
+- `Cluster.selection`: set of selected window indices. **Runtime only, never saved** — adding it to a window's data table would push it through `ConvertToEuro` and the `Layout` copies.
 
-**Key globals:** `Activ_Cluster`, `Data`, `Layout`, `Locale`, `LOCALPLAYER`, `LP_CLASS`, `QS_SIZE` (36px), `FRAME` (1px)
+**Key globals:** `Activ_Cluster`, `Data`, `Layout`, `Locale`, `LOCALPLAYER`, `LP_CLASS`, `QS_SIZE` (36px), `FRAME` (1px), `MOVE_HEADER_COLOR` / `MOVE_HEADER_COLOR_SELECTED`
 
 ## In-game commands
 
 ```
 /tbd add <width> <height>       -- add a new quickslot window
 /tbd remove <index>             -- remove a window by index
+/tbd resize <index> <w> <h>     -- resize a window
+/tbd color <index> <r> <g> <b>  -- set background colour (0-255 per channel)
+/tbd opacity <index> <0-100>    -- set opacity
 /tbd move                       -- toggle move mode (shows drag handles)
+/tbd select all|none            -- select or deselect every window
+/tbd select <index> ...         -- toggle selection of windows by index
+/tbd lock                       -- toggle quickslot lock
+/tbd list                       -- list windows with index, size, position, selection
 /tbd layout save <name>         -- save current window geometry as a named layout
 /tbd layout load <name>         -- load a named layout (clears quickslot assignments)
+/tbd layout delete <name>       -- delete a saved layout
 /tbd layout overview            -- list saved layouts
 ```
+
+## Multi-bar selection and group drag
+
+In move mode, ctrl+left-click a bar's handle to toggle it in `Cluster.selection`; dragging a
+selected handle moves every selected bar by the same delta. Three things to know before touching it:
+
+- **Mouse event args carry only `Button`, `X`, `Y`.** `Control`/`Shift`/`Alt` exist only on *key*
+  event args. Modifier state at click time comes from the static `Turbine.UI.Control.IsControlKeyDown()`,
+  wrapped as `Utils.IsAddToSelectionDown(args)` in `Utils/Misc.lua` — that is the one place to
+  change if the client ever swallows ctrl+left-click.
+- **The drag delta is per-event, not cumulative.** `args.X` is header-local and the header moves
+  with its window, so `args.X - dragStartX` is the increment for that event. `Cluster:DragBy` fans
+  that increment out to every selected window and moves the grabbed one exactly once.
+- **Window indices are not stable identities.** `RemoveWindow` swaps the last entry into the freed
+  slot, so `/tbd remove` clears the selection first. `/tbd add` appends and leaves indices intact,
+  so it must *not* clear. `Cluster:Reload()` prunes vanished indices and re-applies the highlight,
+  the same way it already re-applies `moving` and `locked`.
 
 ## Turbine API conventions
 

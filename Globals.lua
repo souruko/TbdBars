@@ -29,6 +29,12 @@ Activ_Cluster = nil
 FRAME = 1
 QS_SIZE = 36
 
+-- move handle colours. never mutate these, Turbine.UI.Color.X is shared
+-- process wide. cyan is picked over orange so it cannot read as "a slightly
+-- different yellow", and it still keeps the handle's black label readable.
+MOVE_HEADER_COLOR          = Turbine.UI.Color.Yellow
+MOVE_HEADER_COLOR_SELECTED = Turbine.UI.Color.Cyan
+
 ClassSpecializationString = "You have acquired the Class Specialization Bonus Trait:"
 
 ClassStrings = {}

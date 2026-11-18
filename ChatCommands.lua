@@ -10,12 +10,16 @@ function PrintHelp()
     h("color <index> <r> <g> <b>", "Set bar background color (0-255 each)")
     h("opacity <index> <0-100>",   "Set bar opacity")
     h("move",                      "Toggle move mode")
+    h("select all|none",           "Select or deselect every bar")
+    h("select <index> ...",        "Toggle selection of one or more bars")
     h("lock",                      "Toggle quickslot lock")
     h("list",                      "List all bars with index, size, and position")
     h("layout save <name>",        "Save current bar positions as a layout")
     h("layout load <name>",        "Load a saved layout")
     h("layout delete <name>",      "Delete a saved layout")
     h("layout overview",           "List all saved layouts")
+    Turbine.Shell.WriteLine("  In move mode, ctrl+left-click a handle to add or remove that bar")
+    Turbine.Shell.WriteLine("  from the selection. Dragging any selected handle moves them all.")
 end
 
 function ListWindows()
@@ -23,8 +27,12 @@ function ListWindows()
     local count = #cluster
     Turbine.Shell.WriteLine("Windows (" .. count .. "):")
     for idx, window_data in ipairs(cluster) do
+        local mark = ""
+        if Activ_Cluster ~= nil and Activ_Cluster:IsSelected(idx) then
+            mark = " [selected]"
+        end
         Turbine.Shell.WriteLine("  #" .. idx .. ": " .. window_data.width .. "x" .. window_data.height ..
-            " at (" .. window_data.left .. ", " .. window_data.top .. ")")
+            " at (" .. window_data.left .. ", " .. window_data.top .. ")" .. mark)
     end
     if count == 0 then
         Turbine.Shell.WriteLine("  No windows on this trait line.")
@@ -72,6 +80,10 @@ function command:Execute( _, str )
             Turbine.Shell.WriteLine("No window at index " .. idx .. ".")
             return
         end
+
+        -- RemoveWindow swaps the last bar into the freed slot, so an index
+        -- held in the selection would now point at a different bar
+        Activ_Cluster:ClearSelection()
 
         RemoveWindow(idx)
         Activ_Cluster:Reload()
@@ -162,6 +174,45 @@ function command:Execute( _, str )
 
         Activ_Cluster:Move()
         Save()
+
+    elseif cmd == "select" then
+
+        if list[ 2 ] == nil then
+            Turbine.Shell.WriteLine( "Usage: /tbd select <all|none|index ...>")
+            return
+        end
+
+        local sub = string.lower( list[ 2 ] )
+
+        if sub == "none" then
+
+            Activ_Cluster:ClearSelection()
+            Turbine.Shell.WriteLine("Selection cleared.")
+            return
+        end
+
+        if sub == "all" then
+
+            Activ_Cluster:SelectAll()
+
+        else
+
+            for i = 2, #list, 1 do
+                local idx = tonumber(list[ i ])
+                if idx == nil or Data[Data.activ][idx] == nil then
+                    Turbine.Shell.WriteLine("No window at index " .. list[ i ] .. ".")
+                else
+                    Activ_Cluster:ToggleSelected(idx)
+                end
+            end
+
+        end
+
+        Turbine.Shell.WriteLine("Selected bars: " .. Activ_Cluster:SelectionCount() .. ".")
+
+        if not Activ_Cluster.moving then
+            Turbine.Shell.WriteLine("Move mode is off - run /tbd move to see the handles.")
+        end
 
     elseif cmd == "lock" then
 

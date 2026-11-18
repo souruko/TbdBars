@@ -13,11 +13,14 @@
 
 QuickslotWindow = class( Turbine.UI.Window )
 
-function QuickslotWindow:Constructor(data, index)
+function QuickslotWindow:Constructor(data, index, cluster)
     Turbine.UI.Window.Constructor( self )
 
     self.data = data
     self.index = index
+    self.cluster = cluster
+    self.selected = false
+    self.dragging = false
     self.quickslots = {}
 
     local move_header_width = 200
@@ -33,35 +36,42 @@ function QuickslotWindow:Constructor(data, index)
     self.move_header:SetParent(self)
     self.move_header:SetSize(move_header_width, move_header_height)
     self.move_header:SetPosition( 0 , 0)
-    self.move_header:SetBackColor(Turbine.UI.Color.Yellow)
+    self.move_header:SetBackColor(MOVE_HEADER_COLOR)
     self.move_header:SetMouseVisible(true)
 
     self.move_header.MouseDown = function( sender, args )
-		if args.Button == Turbine.UI.MouseButton.Left then
-			self.dragging = true	
-			self.dragStartX = args.X
-            self.dragStartY = args.Y
-		end
-	end
-	
-	self.move_header.MouseMove = function( sender, args )
-		if self.dragging then
-			local x,y = self:GetPosition()	
-			x = x + ( args.X - self.dragStartX )
-            y = y + ( args.Y - self.dragStartY )
-            self.data.left = x
-            self.data.top = y
+        if args.Button ~= Turbine.UI.MouseButton.Left then
+            return
+        end
 
-            self:SetPosition( x, y )
-            self.move_label:SetText("<" .. self.index .. "> left: " .. self:GetLeft() .. " top: " .. self:GetTop())
-  		end
-	end
+        -- modifier held: toggle this bar in the selection, do not start a drag
+        if Utils.IsAddToSelectionDown( args ) then
+            self.cluster:ToggleSelected( self.index )
+            return
+        end
 
-	self.move_header.MouseUp = function( sender, args )
-		if args.Button == Turbine.UI.MouseButton.Left then
-			self.dragging = false
+        -- dragging an unselected bar drops the old selection
+        if not self.cluster:IsSelected( self.index ) then
+            self.cluster:ClearSelection()
+        end
 
-		end
+        self.dragging = true
+        self.dragStartX = args.X
+        self.dragStartY = args.Y
+    end
+
+    self.move_header.MouseMove = function( sender, args )
+        if self.dragging then
+            -- args.X is header local and the header moves with the window, so
+            -- this delta is the increment for this event, not a running total
+            self.cluster:DragBy( self, args.X - self.dragStartX, args.Y - self.dragStartY )
+        end
+    end
+
+    self.move_header.MouseUp = function( sender, args )
+        if args.Button == Turbine.UI.MouseButton.Left then
+            self.dragging = false
+        end
     end
 
     self.move_label = Turbine.UI.Label()
@@ -69,8 +79,8 @@ function QuickslotWindow:Constructor(data, index)
     self.move_label:SetSize(move_header_width, move_header_height)
     self.move_label:SetTextAlignment(Turbine.UI.ContentAlignment.MiddleLeft)
     self.move_label:SetForeColor(Turbine.UI.Color.Black)
-    self.move_label:SetText("<" .. self.index .. "> left: " .. self:GetLeft() .. " top: " .. self:GetTop())
     self.move_label:SetMouseVisible(false)
+    self:UpdateMoveLabel()
 
     self.background = Turbine.UI.Window()
     self.background:SetParent(self)
@@ -88,6 +98,42 @@ function QuickslotWindow:Constructor(data, index)
 
 
 end
+
+function QuickslotWindow:UpdateMoveLabel()
+
+    self.move_label:SetText("<" .. self.index .. "> left: " .. self:GetLeft() .. " top: " .. self:GetTop())
+
+end
+
+
+function QuickslotWindow:MoveBy( dx, dy )
+
+    local x, y = self:GetPosition()
+
+    x = x + dx
+    y = y + dy
+
+    self.data.left = x
+    self.data.top = y
+
+    self:SetPosition( x, y )
+    self:UpdateMoveLabel()
+
+end
+
+
+function QuickslotWindow:SetSelected( state )
+
+    self.selected = state
+
+    if state then
+        self.move_header:SetBackColor(MOVE_HEADER_COLOR_SELECTED)
+    else
+        self.move_header:SetBackColor(MOVE_HEADER_COLOR)
+    end
+
+end
+
 
 function QuickslotWindow:QSDataChanged(index, type, data)
     
