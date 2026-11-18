@@ -7,6 +7,61 @@
 
 ]]
 
+-- bounding box of a list of windows, from their visible bar rects
+local function MembersBounds( members )
+
+    local left, top, right, bottom
+
+    for i, window in ipairs(members) do
+
+        local x, y, w, h = Utils.BarRect( window.data )
+
+        if left   == nil or x     < left   then left   = x     end
+        if top    == nil or y     < top    then top    = y     end
+        if right  == nil or x + w > right  then right  = x + w end
+        if bottom == nil or y + h > bottom then bottom = y + h end
+
+    end
+
+    return left, top, right, bottom
+
+end
+
+
+-- a snap candidate is an explicit { moving edge, target position, is screen
+-- centre } triple rather than a loose edge list crossed with a target list,
+-- because the gap only applies to *adjacency* (my left edge against your right
+-- edge) and never to *alignment* (my left edge against your left edge).
+--
+-- returns the smallest correction within SNAP_DISTANCE, or 0 when there is
+-- none, plus whether the winner was a screen centre line so the caller can
+-- light the matching guide. candidates are walked in order and compared with a
+-- strict <, so an earlier candidate wins a tie - the screen centre ones are
+-- added first for exactly that reason.
+local function SnapCandidates( candidates )
+
+    local best = 0
+    local best_distance = nil
+    local best_screen = false
+
+    for i, candidate in ipairs(candidates) do
+
+        local correction = candidate[2] - candidate[1]
+        local distance = math.abs(correction)
+
+        if distance <= SNAP_DISTANCE and ( best_distance == nil or distance < best_distance ) then
+            best = correction
+            best_distance = distance
+            best_screen = ( candidate[3] == true )
+        end
+
+    end
+
+    return best, best_screen
+
+end
+
+
 Cluster = class()
 
 function Cluster:Constructor(data)
@@ -19,6 +74,8 @@ function Cluster:Constructor(data)
     self.selection = {}
 
     self.windows = {}
+
+    self.guides = Guides()
 
     self:CreateWindows()
 
@@ -33,6 +90,11 @@ function Cluster:Move()
     if not self.moving then
         self:ClearSelection()
     end
+
+    -- there is no resolution change event in the api, so the guides re-centre
+    -- on the move mode toggle instead
+    self.guides:Refresh()
+    self.guides:Show(self.moving)
 
     for index, window in pairs(self.windows) do
         window:Move(self.moving)
@@ -60,6 +122,8 @@ function Cluster:Reload()
 
     self:CloseWindows()
     self:CreateWindows()
+
+    self.guides:Refresh()
 
     -- drop any selected index the rebuilt window list no longer has
     for index, selected in pairs(self.selection) do
@@ -166,6 +230,21 @@ function Cluster:ApplySelection()
 end
 
 
+function Cluster:SelectedWindows()
+
+    local list = {}
+
+    for index, window in pairs(self.windows) do
+        if self:IsSelected(index) then
+            list[#list + 1] = window
+        end
+    end
+
+    return list
+
+end
+
+
 -- one drag event, fanned out: if the grabbed bar is selected the whole
 -- selection moves by the same delta, otherwise only the grabbed bar moves
 function Cluster:DragBy( window, dx, dy )
@@ -174,16 +253,132 @@ function Cluster:DragBy( window, dx, dy )
         return
     end
 
-    if not self:IsSelected(window.index) then
-        window:MoveBy(dx, dy)
-        return
+    local members = { window }
+
+    if self:IsSelected(window.index) then
+        members = self:SelectedWindows()
     end
 
-    for index, other in pairs(self.windows) do
-        if self:IsSelected(index) then
-            other:MoveBy(dx, dy)
-        end
+    dx, dy = self:SnapDelta( members, dx, dy )
+
+    for i, member in ipairs(members) do
+        member:MoveBy(dx, dy)
     end
+
+end
+
+
+-- adjust one drag delta so the moving group lands on a snap target and stays
+-- on screen.
+--
+-- this works because the delta handed to DragBy is always the gap between
+-- where the cursor says the group should be and where it actually is, not a
+-- running total. a correction applied here therefore reappears in the next
+-- event's delta, which is what makes the group stick to a line while the
+-- cursor stays close and release cleanly once it does not.
+function Cluster:SnapDelta( members, dx, dy )
+
+    local left, top, right, bottom = MembersBounds( members )
+
+    left   = left   + dx
+    right  = right  + dx
+    top    = top    + dy
+    bottom = bottom + dy
+
+    local snapped_x = false
+    local snapped_y = false
+
+    if not Utils.IsSnapOverrideDown() then
+
+        local screen_width, screen_height = Turbine.UI.Display.GetSize()
+
+        local centre_x = math.floor( screen_width / 2 )
+        local centre_y = math.floor( screen_height / 2 )
+
+        local group_centre_x = left + math.floor( ( right - left ) / 2 )
+        local group_centre_y = top  + math.floor( ( bottom - top ) / 2 )
+
+        local gap = Data.gap or 0
+
+        -- the screen centre candidates go first so they win a tie against a bar
+        local candidates_x = {
+            { group_centre_x, centre_x, true },
+            { left,           centre_x, true },
+            { right,          centre_x, true },
+        }
+
+        local candidates_y = {
+            { group_centre_y, centre_y, true },
+            { top,            centre_y, true },
+            { bottom,         centre_y, true },
+        }
+
+        -- excluded by membership in the moving group, not by selection: a bar
+        -- being dragged on its own must still snap to the selected ones
+        local in_group = {}
+
+        for i, member in ipairs(members) do
+            in_group[member.index] = true
+        end
+
+        for index, window in pairs(self.windows) do
+            if not in_group[index] then
+
+                local x, y, w, h = Utils.BarRect( window.data )
+
+                -- adjacency: sit beside the bar, gap pixels clear of it
+                candidates_x[#candidates_x + 1] = { left,  x + w + gap }
+                candidates_x[#candidates_x + 1] = { right, x - gap }
+
+                candidates_y[#candidates_y + 1] = { top,    y + h + gap }
+                candidates_y[#candidates_y + 1] = { bottom, y - gap }
+
+                -- alignment: share an edge or a centre line, never a gap
+                candidates_x[#candidates_x + 1] = { left,           x }
+                candidates_x[#candidates_x + 1] = { right,          x + w }
+                candidates_x[#candidates_x + 1] = { group_centre_x, x + math.floor( w / 2 ) }
+
+                candidates_y[#candidates_y + 1] = { top,            y }
+                candidates_y[#candidates_y + 1] = { bottom,         y + h }
+                candidates_y[#candidates_y + 1] = { group_centre_y, y + math.floor( h / 2 ) }
+
+            end
+        end
+
+        local cx, screen_x = SnapCandidates( candidates_x )
+        local cy, screen_y = SnapCandidates( candidates_y )
+
+        dx = dx + cx
+        dy = dy + cy
+
+        left   = left   + cx
+        right  = right  + cx
+        top    = top    + cy
+        bottom = bottom + cy
+
+        snapped_x = screen_x
+        snapped_y = screen_y
+
+    end
+
+    self.guides:SetActive( snapped_x, snapped_y )
+
+    -- clamp the whole group at once rather than letting each bar clamp itself,
+    -- which would squash the group's relative offsets as soon as one member
+    -- reached an edge. the group's window box reaches MOVE_HEADER_HEIGHT above
+    -- the topmost bar.
+    local window_left   = left
+    local window_top    = top - MOVE_HEADER_HEIGHT
+    local window_width  = right - left
+    local window_height = bottom - top + MOVE_HEADER_HEIGHT
+
+    local clamped_left, clamped_top =
+        Utils.ClampToScreen( window_left, window_top, window_width, window_height )
+
+    dx = dx + ( clamped_left - window_left )
+    dy = dy + ( clamped_top - window_top )
+
+    return dx, dy
 
 end
 
@@ -202,5 +397,7 @@ end
 function Cluster:Close()
 
     self:CloseWindows()
+
+    self.guides:Close()
 
 end

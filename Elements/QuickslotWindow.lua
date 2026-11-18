@@ -23,18 +23,16 @@ function QuickslotWindow:Constructor(data, index, cluster)
     self.dragging = false
     self.quickslots = {}
 
-    local move_header_width = 200
-    local move_header_height = 20
     local width = ( QS_SIZE * self.data.width) + ( FRAME * 4 )
     local height = ( QS_SIZE * self.data.height) + ( FRAME * 4 )
 
     self:SetPosition(self.data.left, self.data.top)
-    self:SetSize(width, height + move_header_height)
+    self:SetSize(width, height + MOVE_HEADER_HEIGHT)
     self:SetMouseVisible(false)
 
     self.move_header = Turbine.UI.Window()
     self.move_header:SetParent(self)
-    self.move_header:SetSize(move_header_width, move_header_height)
+    self.move_header:SetSize(MOVE_HEADER_WIDTH, MOVE_HEADER_HEIGHT)
     self.move_header:SetPosition( 0 , 0)
     self.move_header:SetBackColor(MOVE_HEADER_COLOR)
     self.move_header:SetMouseVisible(true)
@@ -76,7 +74,7 @@ function QuickslotWindow:Constructor(data, index, cluster)
 
     self.move_label = Turbine.UI.Label()
     self.move_label:SetParent(self.move_header)
-    self.move_label:SetSize(move_header_width, move_header_height)
+    self.move_label:SetSize(MOVE_HEADER_WIDTH, MOVE_HEADER_HEIGHT)
     self.move_label:SetTextAlignment(Turbine.UI.ContentAlignment.MiddleLeft)
     self.move_label:SetForeColor(Turbine.UI.Color.Black)
     self.move_label:SetMouseVisible(false)
@@ -84,7 +82,7 @@ function QuickslotWindow:Constructor(data, index, cluster)
 
     self.background = Turbine.UI.Window()
     self.background:SetParent(self)
-    self.background:SetPosition(0, move_header_height)
+    self.background:SetPosition(0, MOVE_HEADER_HEIGHT)
     self.background:SetBackColor( Utils.ColorFix( self.data.color ) )
     self.background:SetSize(width, height)
     self.background:SetMouseVisible(true)
@@ -110,8 +108,19 @@ function QuickslotWindow:MoveBy( dx, dy )
 
     local x, y = self:GetPosition()
 
-    x = x + dx
-    y = y + dy
+    self:MoveTo( x + dx, y + dy )
+
+end
+
+
+-- the single writer of position, and therefore the single clamp site. the
+-- clamp uses the whole window including the move header, so a bar can never
+-- end up with its handle off the screen edge and no way to grab it back.
+function QuickslotWindow:MoveTo( x, y )
+
+    local width, height = Utils.WindowSize( self.data )
+
+    x, y = Utils.ClampToScreen( x, y, width, height )
 
     self.data.left = x
     self.data.top = y

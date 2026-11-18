@@ -62,6 +62,17 @@ function SetWindowOpacity(index, value)
 
 end
 
+-- spacing kept between bars when one snaps beside another. account wide would
+-- be nicer but Data is the character save, and bar geometry is per character
+-- anyway, so this lives alongside it.
+function SetSnapGap(value)
+
+    Data.gap = value
+
+    Save()
+
+end
+
 function ResizeWindow(index, width, height)
 
     local cluster = Data[Data.activ]

@@ -1,5 +1,5 @@
 **TbdBars** — LOTRO Quickslot Bar Plugin
-Author: Souru | Version: 0.0.4
+Author: Souru | Version: 0.0.5
 
 Displays configurable quickslot bars that automatically swap when you switch your active class specialization (trait line: Red / Yellow / Blue).
 
@@ -10,6 +10,8 @@ Displays configurable quickslot bars that automatically swap when you switch you
 - Bars swap automatically on specialization change — no manual action needed
 - Each bar is independently resizable (in quickslot-unit increments) and freely repositionable
 - Ctrl+click to select several bars and drag them as one block, keeping their relative spacing
+- Bars snap to the screen centre lines and to each other while dragging, with centre guide lines
+- A configurable gap, so bars settle a set number of pixels clear of each other instead of touching
 - Named layout snapshots: save and restore window geometry across sessions
 - Character-scoped bar data (quickslot assignments stay per character)
 - Account-scoped layout data (named layouts shared across all characters on the account)
@@ -60,6 +62,7 @@ All commands use `/tbd` or `/tbdbars` as the prefix.
 `/tbd move` — Toggle move mode (drag handles appear on all bars)
 `/tbd select all` / `/tbd select none` — Select or deselect every bar
 `/tbd select <index> ...` — Add or remove bars from the selection by number
+`/tbd gap <pixels>` — Spacing bars keep when they snap beside each other
 `/tbd lock` — Toggle quickslot lock; locked bars ignore shortcut changes
 `/tbd list` — List all bars with index, size, position, and selection state
 `/tbd layout save <name>` — Save current bar geometry as a named layout
@@ -73,6 +76,7 @@ All commands use `/tbd` or `/tbdbars` as the prefix.
 /tbd add 3 2           -- adds a 3×2 bar
 /tbd remove 2          -- removes bar #2 from the active trait line
 /tbd select 1 3        -- selects bars #1 and #3
+/tbd gap 5             -- bars now snap 5px clear of each other
 /tbd layout save main  -- saves current geometry as "main"
 /tbd layout load main  -- restores "main" layout
 ```
@@ -91,6 +95,34 @@ dragging works exactly as it always did. `/tbd select all` grabs every bar at on
 
 The selection covers only the trait line you are currently on, and is cleared when you leave move
 mode or remove a bar.
+
+---
+
+**Lining bars up**
+
+Two guide lines mark the centre of the screen while move mode is on. As you drag, a bar snaps onto
+either centre line — by its own centre or by one of its edges — and onto other bars, once it comes
+within a few pixels. The guide line brightens while a bar is sitting on it. Hold **Alt** while
+dragging to ignore snapping entirely and place a bar freely.
+
+Snapping to another bar comes in two flavours:
+
+- **Beside it** — the bar comes to rest `/tbd gap` pixels clear of its neighbour's edge.
+- **In line with it** — edges and centre axes line up exactly, with no gap. This is never affected
+  by the gap setting; lining up is lining up.
+
+So set the spacing once and then just drag:
+
+```
+/tbd gap 5             -- bars settle 5px clear of each other
+/tbd gap 0             -- back to flush
+/tbd gap               -- report the current value
+```
+
+The gap is saved per character, and it does not affect the screen centre lines — centred is centred.
+
+Bars can no longer be dragged off the screen; they stop with the move handle still reachable. The
+handle occupies the 20 pixels above the bar, so a bar's own top edge cannot go higher than `y = 20`.
 
 ---
 

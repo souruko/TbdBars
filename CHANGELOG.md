@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.5] - 2026-11-19
+
+### Added
+- Bars now snap into place while you drag them. A bar jumps onto the screen's centre line, or beside another bar, or into line with another bar's edge or centre, once it comes within a few pixels — so lining bars up no longer means reading coordinates off the move handle. Hold Alt while dragging to ignore snapping and place a bar exactly where you want it.
+- Two guide lines mark the centre of the screen for as long as move mode is on, and brighten while a bar is sitting on one.
+- `/tbd gap <pixels>` — sets the spacing a bar keeps when it snaps beside another one. Set it to 5 and bars come to rest 5px clear of each other instead of touching; set it back to 0 for flush. Lining up edges and centres is unaffected — only sitting *next to* a bar uses the gap. `/tbd gap` on its own reports the current value.
+
+### Changed
+- Bars can no longer be dragged off the edge of the screen. They stop with the move handle still reachable, and a bar that had already been lost off the edge is brought back the first time you drag it.
+- When several bars are selected, the group now stops at a screen edge as a block, so the spacing you set up between them is never squashed.
+- `/tbd help` now mentions snapping, the snap gap and the Alt override
+
 ## [0.0.4] - 2026-11-18
 
 ### Added

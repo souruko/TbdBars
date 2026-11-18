@@ -12,6 +12,7 @@ function PrintHelp()
     h("move",                      "Toggle move mode")
     h("select all|none",           "Select or deselect every bar")
     h("select <index> ...",        "Toggle selection of one or more bars")
+    h("gap <pixels>",              "Spacing bars keep when they snap beside each other")
     h("lock",                      "Toggle quickslot lock")
     h("list",                      "List all bars with index, size, and position")
     h("layout save <name>",        "Save current bar positions as a layout")
@@ -20,6 +21,9 @@ function PrintHelp()
     h("layout overview",           "List all saved layouts")
     Turbine.Shell.WriteLine("  In move mode, ctrl+left-click a handle to add or remove that bar")
     Turbine.Shell.WriteLine("  from the selection. Dragging any selected handle moves them all.")
+    Turbine.Shell.WriteLine("  Bars snap to the screen centre lines and to each other while")
+    Turbine.Shell.WriteLine("  dragging; hold Alt to drag without snapping. A bar coming to rest")
+    Turbine.Shell.WriteLine("  beside another leaves the gap set by /tbd gap.")
 end
 
 function ListWindows()
@@ -212,6 +216,28 @@ function command:Execute( _, str )
 
         if not Activ_Cluster.moving then
             Turbine.Shell.WriteLine("Move mode is off - run /tbd move to see the handles.")
+        end
+
+    elseif cmd == "gap" then
+
+        if list[ 2 ] == nil then
+            Turbine.Shell.WriteLine("Snap gap is " .. Data.gap .. "px. Usage: /tbd gap <pixels>")
+            return
+        end
+
+        local gap = tonumber(list[ 2 ])
+
+        if gap == nil or gap < 0 or gap > 200 or math.floor(gap) ~= gap then
+            Turbine.Shell.WriteLine("Gap must be a whole number of pixels between 0 and 200.")
+            return
+        end
+
+        SetSnapGap(gap)
+
+        if gap == 0 then
+            Turbine.Shell.WriteLine("Snap gap cleared - bars now snap flush against each other.")
+        else
+            Turbine.Shell.WriteLine("Snap gap set to " .. gap .. "px.")
         end
 
     elseif cmd == "lock" then

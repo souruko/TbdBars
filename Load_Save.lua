@@ -89,6 +89,12 @@ else
 
 end
 
+-- seeded here rather than only in the fresh-install branch so a savefile
+-- written before the setting existed still gets a value
+if Data.gap == nil then
+    Data.gap = 0
+end
+
 if Turbine.PluginData.Load(Turbine.DataScope.Account, "tbdbars_layout") ~= nil then
 
     Layout = Turbine.PluginData.Load(Turbine.DataScope.Account, "tbdbars_layout")

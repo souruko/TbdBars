@@ -17,7 +17,7 @@ The primary working directory **is** the live game plugin directory (via Steam P
 **Load order** (defined by `Main.lua`):
 1. `Globals.lua` — sets up global state: `Data`, `Layout`, `Activ_Cluster`, locale detection, `LOCALPLAYER`, `LP_CLASS`, trait line constants, and the `ClassStrings` map (used to detect specialization changes from chat messages)
 2. `Utils/` — OOP helpers (`class()`, `static_class()`, `abstract_class()`, `final_class()`) and `Utils.ColorFix()`
-3. `Elements/` — UI classes: `QuickslotWindow` (a single draggable bar) and `Cluster` (manages a set of windows for one trait line)
+3. `Elements/` — UI classes: `QuickslotWindow` (a single draggable bar), `Guides` (the two screen-centre guide lines) and `Cluster` (manages a set of windows for one trait line). `Guides` must be imported before `Cluster`, which constructs one
 4. `Load_Save.lua` — populates `Data` (character-scoped) and `Layout` (account-scoped) from `Turbine.PluginData`, defines `Save()` and `SaveLayoutData()`; includes `ConvertToEuro`/`ConvertFromEuro` for DE/FR client workaround
 5. `Main.lua` — instantiates `Activ_Cluster` from `Data[Data.activ]`
 6. `LayoutChanges.lua` — hooks `Turbine.Chat.Received` to detect specialization changes via advancement chat messages and calls `LayoutChanged()`; also defines `LoadLayout()`, `SaveLayout()`, `PrintLayout()`
@@ -27,9 +27,10 @@ The primary working directory **is** the live game plugin directory (via Steam P
 - `Data` (character save): a table keyed by trait line number (`TRAIT_LINE` in `Globals.lua` — 1=Blue, 2=Red, 3=Yellow). Each entry is a list of window data tables with fields `left`, `top`, `width` (in quickslot units), `height`, `color`, `opacity`, `quickslots`.
 - `Layout` (account save): named layout snapshots (window geometry only, no quickslot assignments).
 - `Data.activ`: the currently active trait line index.
+- `Data.gap`: pixels a bar keeps when it snaps beside another. Seeded to 0 in `Load_Save.lua` **outside** the fresh-install branch, so savefiles written before the setting existed get a value.
 - `Cluster.selection`: set of selected window indices. **Runtime only, never saved** — adding it to a window's data table would push it through `ConvertToEuro` and the `Layout` copies.
 
-**Key globals:** `Activ_Cluster`, `Data`, `Layout`, `Locale`, `LOCALPLAYER`, `LP_CLASS`, `QS_SIZE` (36px), `FRAME` (1px), `MOVE_HEADER_COLOR` / `MOVE_HEADER_COLOR_SELECTED`
+**Key globals:** `Activ_Cluster`, `Data`, `Layout`, `Locale`, `LOCALPLAYER`, `LP_CLASS`, `QS_SIZE` (36px), `FRAME` (1px), `MOVE_HEADER_WIDTH` (200) / `MOVE_HEADER_HEIGHT` (20), `SNAP_DISTANCE` (8px), `MOVE_HEADER_COLOR` / `MOVE_HEADER_COLOR_SELECTED`, `GUIDE_*`
 
 ## In-game commands
 
@@ -42,6 +43,7 @@ The primary working directory **is** the live game plugin directory (via Steam P
 /tbd move                       -- toggle move mode (shows drag handles)
 /tbd select all|none            -- select or deselect every window
 /tbd select <index> ...         -- toggle selection of windows by index
+/tbd gap <pixels>               -- spacing kept when a bar snaps beside another
 /tbd lock                       -- toggle quickslot lock
 /tbd list                       -- list windows with index, size, position, selection
 /tbd layout save <name>         -- save current window geometry as a named layout
@@ -66,6 +68,43 @@ selected handle moves every selected bar by the same delta. Three things to know
   slot, so `/tbd remove` clears the selection first. `/tbd add` appends and leaves indices intact,
   so it must *not* clear. `Cluster:Reload()` prunes vanished indices and re-applies the highlight,
   the same way it already re-applies `moving` and `locked`.
+
+## Positioning: snapping, guides, clamping
+
+`Cluster:SnapDelta` adjusts every drag delta before it is applied, and `QuickslotWindow:MoveTo` is
+the single writer of position and therefore the single clamp site. Things that cost real effort to
+work out:
+
+- **`data.top` is 20px above the visible bar.** The move header occupies the top of the window
+  whether or not it is visible, so the visible rect is `(data.left, data.top + MOVE_HEADER_HEIGHT,
+  …)`. Use `Utils.BarRect(data)` — never recompute it inline. The offset is the same for every bar,
+  so it cancels out of bar-to-bar maths (shared edges, gaps) and only bites when comparing against
+  the screen; getting it wrong puts a "centred" bar 10px high.
+- **The clamp uses `Utils.WindowSize` (bar + header), not the bar rect.** A bar whose visible top
+  reached `y = 0` would have its handle at `-20..0` and could never be grabbed again — which is the
+  problem the clamp exists to solve. The cost is that a bar's visible top cannot go above `y = 20`.
+  Far edge is clamped before the near edge, so an oversized rect keeps its top-left on screen.
+- **Group drags clamp the group's bounding box, not each bar.** Per-bar clamping squashes the
+  group's relative offsets the moment one member reaches an edge, so `SnapDelta` folds the group
+  clamp into the returned delta and the per-bar clamp in `MoveTo` becomes a no-op.
+- **A snap candidate is an explicit `{ moving edge, target, is_screen_centre }` triple**, not an
+  edge list crossed with a target list. That restructure exists because `Data.gap` applies only to
+  *adjacency* (my left edge against your right edge, gap pixels clear) and never to *alignment* (my
+  left edge against your left edge). A loose cross product cannot express the difference.
+- **Snap targets exclude the moving group by membership, not by selection** — dragging an unselected
+  bar while a selection exists must still be able to snap to the selected bars. The screen centre is
+  listed first and ties are broken with a strict `<`, so it wins against a bar edge. The gap never
+  touches the screen centre candidates.
+- **`Turbine.UI.Display` has no resolution-change event and no UI-scale getter** — only six static
+  getters. `Guides:Refresh()` is therefore called on the move-mode toggle and on `Reload()` rather
+  than in response to a resize.
+- **A guide line must be a top-level `Turbine.UI.Window`**, not a `Control` (a Control is clipped to
+  its parent and cannot draw over the game world), every piece `SetMouseVisible(false)` or it eats
+  the drag, and both windows must be closed in `Guides:Close()` or they survive a `/plugins refresh`
+  as orphans. A 1px line is hard to see against terrain, hence the bright edge over a dark core —
+  the same conclusion `Gibberish3/OPTIONS2/MOVE/Window.lua:184-211` reached.
+- `Guides:SetActive` only calls `SetBackColor` on an actual state change, because it runs on every
+  mouse-move event.
 
 ## Turbine API conventions
 

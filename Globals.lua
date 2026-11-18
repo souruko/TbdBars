@@ -35,6 +35,20 @@ QS_SIZE = 36
 MOVE_HEADER_COLOR          = Turbine.UI.Color.Yellow
 MOVE_HEADER_COLOR_SELECTED = Turbine.UI.Color.Cyan
 
+MOVE_HEADER_WIDTH  = 200
+MOVE_HEADER_HEIGHT = 20
+
+-- how close an edge has to come to a target before it snaps, in pixels
+SNAP_DISTANCE = 8
+
+-- the guide lines are drawn over the game world, so a 1px line is hard to make
+-- out against terrain. a bright edge around a darker core reads at any
+-- brightness, which is what Gibberish3 settled on for its crosshair.
+GUIDE_THICKNESS    = 4
+GUIDE_COLOR        = MOVE_HEADER_COLOR_SELECTED
+GUIDE_COLOR_ACTIVE = Turbine.UI.Color.White
+GUIDE_COLOR_CORE   = Turbine.UI.Color(0.1, 0.1, 0.1)
+
 ClassSpecializationString = "You have acquired the Class Specialization Bonus Trait:"
 
 ClassStrings = {}
