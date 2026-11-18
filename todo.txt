@@ -1,6 +1,11 @@
 
-- lock qs
+- scaling?
 
-- settings?
+- resizing a bar reflows the row-major slot index, so shortcuts shift position,
+  and narrowing orphans the entries past the new slot count (never restored,
+  never deleted, reappear if the bar is widened again). needs a key scheme that
+  survives a reflow, which means a save migration.
 
-- visibility trigger?
+- DE/FR clients mangle saved shortcut ids: ConvertFromEuro runs every scalar
+  through tonumber, and tonumber("0x70003F0E") is 1879064334, so quickslot
+  assignments likely do not survive a reload on a german or french client.

@@ -68,7 +68,12 @@ function Cluster:Constructor(data)
 
     self.data = data
     self.moving = false
-    self.locked = false
+
+    -- read from the save, not defaulted to false: a trait line swap throws this
+    -- cluster away and builds a new one (LayoutChanges.lua), so the lock has to
+    -- live in Data to survive one. seeded before CreateWindows so the bars are
+    -- born locked.
+    self.locked = ( Data.locked == true )
 
     -- set of selected window indices, runtime only, never saved
     self.selection = {}
@@ -105,18 +110,52 @@ end
 function Cluster:Lock()
 
     self.locked = not(self.locked)
+    Data.locked = self.locked
 
     for index, window in pairs(self.windows) do
         window:SetLocked(self.locked)
     end
 
+    Save()
+
     if self.locked then
-        Turbine.Shell.WriteLine("Quickslots locked.")
+        Turbine.Shell.WriteLine("Quickslots locked - skills can no longer be added or removed.")
     else
         Turbine.Shell.WriteLine("Quickslots unlocked.")
     end
 
 end
+
+-- empty quickslots. window_index nil means every bar on this trait line,
+-- slot_index nil means every slot on the bar. returns the number of slots that
+-- actually held something, or nil when the lock refused.
+--
+-- the lock refuses this on purpose: a command that walked straight through a
+-- lock would make the lock mean "except when you ask nicely", which is not a
+-- lock. the message points at /tbd lock so it is a one step recovery.
+function Cluster:ClearSlots( window_index, slot_index )
+
+    if self.locked then
+        Turbine.Shell.WriteLine("Quickslots are locked - run /tbd lock first.")
+        return nil
+    end
+
+    local cleared = 0
+
+    for index, window in pairs(self.windows) do
+        if window_index == nil or index == window_index then
+            cleared = cleared + window:ClearSlots( slot_index )
+        end
+    end
+
+    if cleared > 0 then
+        Save()
+    end
+
+    return cleared
+
+end
+
 
 function Cluster:Reload()
 
@@ -134,15 +173,14 @@ function Cluster:Reload()
 
     self:ApplySelection()
 
+    -- move mode is re-applied but the lock is not, and the asymmetry is
+    -- deliberate: QuickslotWindow's constructor unconditionally hides the move
+    -- header, so `moving` genuinely needs putting back, whereas it reads
+    -- cluster.locked for itself and is born with the right lock. a second
+    -- mechanism for the lock would only ever lock, never unlock.
     if self.moving then
         for index, window in pairs(self.windows) do
             window:Move(true)
-        end
-    end
-
-    if self.locked then
-        for index, window in pairs(self.windows) do
-            window:SetLocked(true)
         end
     end
 

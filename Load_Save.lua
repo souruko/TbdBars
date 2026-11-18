@@ -95,6 +95,10 @@ if Data.gap == nil then
     Data.gap = 0
 end
 
+if Data.locked == nil then
+    Data.locked = false
+end
+
 if Turbine.PluginData.Load(Turbine.DataScope.Account, "tbdbars_layout") ~= nil then
 
     Layout = Turbine.PluginData.Load(Turbine.DataScope.Account, "tbdbars_layout")

@@ -13,8 +13,9 @@ function PrintHelp()
     h("select all|none",           "Select or deselect every bar")
     h("select <index> ...",        "Toggle selection of one or more bars")
     h("gap <pixels>",              "Spacing bars keep when they snap beside each other")
-    h("lock",                      "Toggle quickslot lock")
-    h("list",                      "List all bars with index, size, and position")
+    h("clear all|<bar>|<bar> <slot>", "Empty every slot, a whole bar, or one slot")
+    h("lock",                      "Lock bars so nothing can be dropped on them")
+    h("list",                      "List all bars with index, size, position and fill")
     h("layout save <name>",        "Save current bar positions as a layout")
     h("layout load <name>",        "Load a saved layout")
     h("layout delete <name>",      "Delete a saved layout")
@@ -24,19 +25,36 @@ function PrintHelp()
     Turbine.Shell.WriteLine("  Bars snap to the screen centre lines and to each other while")
     Turbine.Shell.WriteLine("  dragging; hold Alt to drag without snapping. A bar coming to rest")
     Turbine.Shell.WriteLine("  beside another leaves the gap set by /tbd gap.")
+    Turbine.Shell.WriteLine("  Dragging a shortcut off a bar does not empty the slot - the game")
+    Turbine.Shell.WriteLine("  hands out a copy and keeps the original. Use /tbd clear instead.")
+    Turbine.Shell.WriteLine("  Slots are numbered left to right, then top to bottom; /tbd list")
+    Turbine.Shell.WriteLine("  shows how many of each bar's slots are filled.")
 end
 
 function ListWindows()
     local cluster = Data[Data.activ]
     local count = #cluster
-    Turbine.Shell.WriteLine("Windows (" .. count .. "):")
+    local lock = ""
+    -- the lock persists now, so it is easy to forget it is on - say so here
+    if Activ_Cluster ~= nil and Activ_Cluster.locked then
+        lock = " [locked]"
+    end
+    Turbine.Shell.WriteLine("Windows (" .. count .. ")" .. lock .. ":")
     for idx, window_data in ipairs(cluster) do
         local mark = ""
         if Activ_Cluster ~= nil and Activ_Cluster:IsSelected(idx) then
             mark = " [selected]"
         end
+        -- the fill count makes the slot numbers /tbd clear takes discoverable
+        local filled = 0
+        for i = 1, window_data.width * window_data.height, 1 do
+            if window_data.quickslots ~= nil and window_data.quickslots[i] ~= nil then
+                filled = filled + 1
+            end
+        end
         Turbine.Shell.WriteLine("  #" .. idx .. ": " .. window_data.width .. "x" .. window_data.height ..
-            " at (" .. window_data.left .. ", " .. window_data.top .. ")" .. mark)
+            " at (" .. window_data.left .. ", " .. window_data.top .. "), " ..
+            filled .. "/" .. (window_data.width * window_data.height) .. " slots filled" .. mark)
     end
     if count == 0 then
         Turbine.Shell.WriteLine("  No windows on this trait line.")
@@ -238,6 +256,60 @@ function command:Execute( _, str )
             Turbine.Shell.WriteLine("Snap gap cleared - bars now snap flush against each other.")
         else
             Turbine.Shell.WriteLine("Snap gap set to " .. gap .. "px.")
+        end
+
+    elseif cmd == "clear" then
+
+        if list[ 2 ] == nil then
+            Turbine.Shell.WriteLine("Usage: /tbd clear all | <bar> | <bar> <slot>")
+            return
+        end
+
+        local window_index = nil
+        local slot_index = nil
+
+        if string.lower( list[ 2 ] ) ~= "all" then
+
+            window_index = tonumber(list[ 2 ])
+
+            if window_index == nil or Data[Data.activ][window_index] == nil then
+                Turbine.Shell.WriteLine("No bar at index " .. list[ 2 ] .. ". Run /tbd list.")
+                return
+            end
+
+            if list[ 3 ] ~= nil then
+
+                local bar = Data[Data.activ][window_index]
+                local slots = bar.width * bar.height
+
+                slot_index = tonumber(list[ 3 ])
+
+                if slot_index == nil or slot_index < 1 or slot_index > slots
+                    or math.floor(slot_index) ~= slot_index then
+                    Turbine.Shell.WriteLine("Bar #" .. window_index .. " has slots 1 to " .. slots ..
+                        ", counted left to right then top to bottom.")
+                    return
+                end
+
+            end
+
+        end
+
+        local cleared = Activ_Cluster:ClearSlots( window_index, slot_index )
+
+        -- nil means the lock refused and has already said so
+        if cleared == nil then
+            return
+        end
+
+        if cleared == 0 then
+            Turbine.Shell.WriteLine("Nothing to clear - those slots were already empty.")
+        elseif slot_index ~= nil then
+            Turbine.Shell.WriteLine("Cleared slot " .. slot_index .. " of bar #" .. window_index .. ".")
+        elseif window_index ~= nil then
+            Turbine.Shell.WriteLine("Cleared " .. cleared .. " slot(s) on bar #" .. window_index .. ".")
+        else
+            Turbine.Shell.WriteLine("Cleared " .. cleared .. " slot(s) across every bar on this trait line.")
         end
 
     elseif cmd == "lock" then

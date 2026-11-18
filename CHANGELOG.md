@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.0.6] - 2026-11-19
+
+### Added
+- `/tbd clear` — empties quickslots, which until now there was no way to do at all. `/tbd clear 2` empties bar #2, `/tbd clear 2 5` empties just slot 5 of it, and `/tbd clear all` empties every bar on the trait line you are on. Slots are counted left to right and then top to bottom. This exists because dragging a shortcut off a bar does *not* empty the slot: the game hands out a copy and keeps the original where it is, so there is no drag gesture a plugin can hook for this.
+- `/tbd list` now shows how many of each bar's slots are filled, so the slot numbers `/tbd clear` wants are easy to work out.
+
+### Changed
+- `/tbd lock` now actually locks. While it is on, nothing can be dropped onto a bar — it used to let the change through on screen and simply not write it down, so the bar you were looking at and the bar you got back after a reload were different bars. Clicking a slot to use the skill still works exactly as normal, so a locked bar is a working bar, just a fixed one. Be aware of what the game lets a plugin do here: a locked bar cannot turn a drop away at the door, it has to put the old skill back immediately afterwards, so you may catch a flicker of the dropped icon before your own skill reappears. `/tbd clear` is refused while the lock is on, and says so.
+- The lock is remembered. It stays on across a specialization change and across a relog, where before it quietly switched itself off every time your bars swapped.
+- `/tbd list` marks the trait line as `[locked]` while the lock is on, since it now persists and is easy to leave on by accident.
+- `/tbd help` describes what the lock does, points at `/tbd clear`, and explains why dragging a shortcut off a bar does not empty it
+
+### Fixed
+- An emptied slot no longer comes back. A slot with nothing in it was being written to the save file as a broken entry and handed back to the game on every rebuild, so even once there was a way to clear a slot it would not have stuck.
+
 ## [0.0.5] - 2026-11-19
 
 ### Added

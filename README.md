@@ -1,5 +1,5 @@
 **TbdBars** — LOTRO Quickslot Bar Plugin
-Author: Souru | Version: 0.0.5
+Author: Souru | Version: 0.0.6
 
 Displays configurable quickslot bars that automatically swap when you switch your active class specialization (trait line: Red / Yellow / Blue).
 
@@ -63,7 +63,9 @@ All commands use `/tbd` or `/tbdbars` as the prefix.
 `/tbd select all` / `/tbd select none` — Select or deselect every bar
 `/tbd select <index> ...` — Add or remove bars from the selection by number
 `/tbd gap <pixels>` — Spacing bars keep when they snap beside each other
-`/tbd lock` — Toggle quickslot lock; locked bars ignore shortcut changes
+`/tbd clear all|<bar>|<bar> <slot>` — Empty every slot, a whole bar, or a single slot
+
+`/tbd lock` — Toggle quickslot lock; nothing can be dropped onto a locked bar
 `/tbd list` — List all bars with index, size, position, and selection state
 `/tbd layout save <name>` — Save current bar geometry as a named layout
 `/tbd layout load <name>` — Load a named layout (clears quickslot assignments)
@@ -136,5 +138,8 @@ handle occupies the 20 pixels above the bar, so a bar's own top edge cannot go h
 
 **Notes**
 - Specialization detection works by listening for the in-game advancement chat message that fires when you commit a trait line. Bars swap automatically at that point.
+- **Dragging a shortcut off a bar does not empty the slot.** The game hands out a copy and keeps the original in place, and it tells a plugin nothing, so there is no drag gesture to hook. Use `/tbd clear` instead. (Measured in-game on Update 50.)
+- Slots are numbered left to right, then top to bottom. `/tbd list` shows how many of each bar's slots are filled.
+- The lock is remembered across specialization changes and relogs. Clicking a locked slot still uses the skill. The game gives a plugin no way to turn a drop away outright, so a locked slot lets the drop land and then puts the original back — you may see the dropped icon flicker before it does. `/tbd clear` is refused while the lock is on.
 - Loading a layout replaces window geometry for the active trait line only and clears all quickslot assignments — you'll need to re-slot your abilities.
 - Bar data is saved per character; layout data is saved per account.

@@ -28,7 +28,9 @@ The primary working directory **is** the live game plugin directory (via Steam P
 - `Layout` (account save): named layout snapshots (window geometry only, no quickslot assignments).
 - `Data.activ`: the currently active trait line index.
 - `Data.gap`: pixels a bar keeps when it snaps beside another. Seeded to 0 in `Load_Save.lua` **outside** the fresh-install branch, so savefiles written before the setting existed get a value.
+- `Data.locked`: boolean, the quickslot lock. Seeded in `Load_Save.lua` alongside `Data.gap` and read by `Cluster:Constructor` — **not** defaulted to `false` there, because a trait-line swap throws the cluster away and builds a new one, so the only place the lock can survive one is `Data`. Booleans round-trip the euro conversion safely (`tonumber(true)` is `nil` in Lua 5.1, so `ConvertFromEuro`'s fallback keeps them).
 - `Cluster.selection`: set of selected window indices. **Runtime only, never saved** — adding it to a window's data table would push it through `ConvertToEuro` and the `Layout` copies.
+- A cleared slot is **absent** from `data.quickslots`, not stored as an Undefined entry. The hole is safe: every reader indexes explicitly and the euro converters walk with `pairs`.
 
 **Key globals:** `Activ_Cluster`, `Data`, `Layout`, `Locale`, `LOCALPLAYER`, `LP_CLASS`, `QS_SIZE` (36px), `FRAME` (1px), `MOVE_HEADER_WIDTH` (200) / `MOVE_HEADER_HEIGHT` (20), `SNAP_DISTANCE` (8px), `MOVE_HEADER_COLOR` / `MOVE_HEADER_COLOR_SELECTED`, `GUIDE_*`
 
@@ -44,7 +46,8 @@ The primary working directory **is** the live game plugin directory (via Steam P
 /tbd select all|none            -- select or deselect every window
 /tbd select <index> ...         -- toggle selection of windows by index
 /tbd gap <pixels>               -- spacing kept when a bar snaps beside another
-/tbd lock                       -- toggle quickslot lock
+/tbd clear all|<bar>|<bar> <slot>  -- empty every slot, a bar, or one slot
+/tbd lock                       -- toggle the quickslot lock (persisted; refuses /tbd clear)
 /tbd list                       -- list windows with index, size, position, selection
 /tbd layout save <name>         -- save current window geometry as a named layout
 /tbd layout load <name>         -- load a named layout (clears quickslot assignments)
@@ -68,6 +71,49 @@ selected handle moves every selected bar by the same delta. Three things to know
   slot, so `/tbd remove` clears the selection first. `/tbd add` appends and leaves indices intact,
   so it must *not* clear. `Cluster:Reload()` prunes vanished indices and re-applies the highlight,
   the same way it already re-applies `moving` and `locked`.
+
+## Quickslot contents: clearing and locking
+
+`QuickslotWindow:OnShortcutChanged` is the single handler for every way a slot's contents change,
+and `QuickslotWindow:ApplyShortcut` is the single caller of `SetShortcut`. Four facts cost real
+effort to establish and are not discoverable from the API stubs:
+
+- **A plugin quickslot is a copy source. Dragging a shortcut off one does not empty it, and fires
+  nothing.** Measured in-game 2026-11-19 on U50: dragging a shortcut away, and dragging it onto
+  another quickslot, both leave the original slot exactly as it was. So there is **no drag-off
+  gesture to hook** and clearing has to be plugin-driven — hence `QuickslotWindow:ClearSlots`,
+  `Cluster:ClearSlots` and `/tbd clear`. This cost a wrong turn: `Basil/UI/PostButton.lua:224-228`
+  carries a comment reading "a user who drags the alias off the slot is left with a dead button",
+  which *looks* like evidence that drag-off empties a slot. It is not — do not infer behaviour from
+  that comment. The savefiles were the tell all along: across five characters there has never been a
+  single `Type = 0` entry.
+- **`ShortcutChanged` fires on a drop *in* and on your own `SetShortcut`**, and its args table is
+  **empty** — the new state has to be read back with `sender:GetShortcut()`. Because our own
+  `SetShortcut` re-enters, the `restoring` guard flag is mandatory, not defensive. The "slot is now
+  empty" branch in `OnShortcutChanged` is therefore defensive only; `/tbd clear` updates
+  `data.quickslots` itself precisely because `ApplyShortcut` raises the guard and the handler never
+  sees our own write.
+- **Never `SetShortcut(nil)`.** The shared Turbine library in `../Turbine/UI/Lotro/Quickslot.lua`
+  monkey-patches `Quickslot:SetShortcut` to call `self:SetVisible( value )` afterwards — passing the
+  Shortcut *object* to a boolean setter. It is live here (`Main.lua`'s `import "Turbine.UI.Lotro"`
+  pulls in `Turbine/UI/Lotro/__init__.lua`, which imports it). A real Shortcut table is truthy so the
+  slot stays visible; `nil` hides it for good. A blank slot is therefore
+  `Shortcut( ShortcutType.Undefined, "" )`. Every `SetShortcut(nil)` in the sibling plugins is
+  `pcall`'d or commented out for this reason.
+- **An emptied slot reports `ShortcutType.Undefined` (0).** Storing that is the old clearing bug:
+  `CreateQuickslots` would then try to restore it. Delete the entry instead.
+- **`SetAllowDrop(false)` does not block a drop onto a Quickslot** — "the game puts it into the slot
+  anyway" (`../Bovven/StatsToolbox/WindowGear.lua:456`), and PrimePlugins tried it and commented it
+  out in three separate files. There is no veto flag on `DragEnter`/`DragStart`, and `DragDropInfo`
+  offers only `IsSuccessful`/`SetSuccessful`. **So the lock is a revert, not a refusal**: the drop
+  lands and the old shortcut goes straight back, which is what PrimePlugins' own locked skill bars
+  do. The only true block is `SetMouseVisible(false)` or a mouse-eating overlay, and both kill the
+  click that uses the skill. Do not reintroduce `SetAllowDrop` here.
+
+`SetLocked` is now just a flag write — the handler consults `self.locked` at call time. Swapping the
+handler in and out was what made the old lock a save suppressor rather than a lock. `CreateQuickslots`
+seeds `self.locked` from the cluster it is handed, so a bare `ResetQuickslots` cannot silently unlock
+a bar; `Cluster:Reload`'s locked pass is belt-and-braces.
 
 ## Positioning: snapping, guides, clamping
 
