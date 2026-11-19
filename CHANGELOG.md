@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.0.7] - 2026-11-19
+
+### Added
+- `/tbd scale <factor>` — makes bars bigger or smaller. `/tbd scale 3` gives you a bar at three times the normal size, and anything from half size to five times is allowed, to two decimal places, so `/tbd scale 1.25` works too. The icons themselves grow, not just the spacing between them — a scaled bar is a genuinely larger bar. Scale is set per bar and applies to whichever bars are selected, so you can keep your main rotation large and tuck a small bar of consumables away in a corner. `/tbd scale` on its own lists what every bar is currently set to. Bear in mind the game's skill icons are small pictures to begin with, so past about three times they start to look soft.
+- `/tbd list` shows a bar's scale next to its size whenever it is not the normal size.
+- Move mode now shows the snap gap. Every bar gets a see-through magenta frame around it, exactly as thick as the gap, marking the ground a neighbouring bar will be kept off — so two bars are at the spacing you set when their frames meet. Instead of guessing whether 5 pixels is what you want, you can see it, change it with `/tbd gap` and watch the frames change with it. At a gap of 0 bars snap flush and there is no frame to draw. The frames cannot be clicked, so dragging works exactly as before.
+
+### Changed
+- Left-clicking a bar's handle in move mode now selects that bar, where before it cleared the selection and moved the bar on its own. That was fine while selecting was only ever a prelude to dragging several bars at once, but `/tbd scale` works on the selection, and having to type `/tbd select 2` for a bar you had just clicked on was a step too many. Ctrl+click still adds and removes bars one at a time, and a plain click on a bar that is *already* selected leaves the selection alone — so a group drag can still be started from any handle in the group.
+- Saved layouts now remember each bar's scale along with its size and position, so loading a layout brings your big and small bars back the way you left them. Layouts saved before this update load at normal size.
+- A scaled-up bar that no longer fits where it was is nudged back on screen instead of hanging off the edge.
+- `/tbd help` lists `/tbd scale`, and its notes at the bottom are down to the three lines about selecting and dragging bars. The paragraphs on snapping, the Alt override, the snap gap and why dragging a shortcut off a bar does not empty the slot were pushing the command list off the top of the chat window; they are all in the README, which has room to explain them properly.
+- The background behind a bar grows with it, so a scaled bar keeps the same even border around its icons that an unscaled one has, rather than a border that stays one pixel wide while everything else gets bigger. Bars at normal size are unchanged.
+
+### Fixed
+- Decimal points and punctuation in a command no longer get thrown away. This was invisible until now, but it also means layout names keep their hyphens and underscores — if you ever saved a layout as something like `raid_1` it was quietly stored as `raid`, so check `/tbd layout overview` for the name it actually has.
+
 ## [0.0.6] - 2026-11-19
 
 ### Added

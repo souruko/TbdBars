@@ -11,6 +11,7 @@ function AddNewWindow(width, height)
     cluster[index].height = height
     cluster[index].color = {R = 0, G = 0, B = 0}
     cluster[index].opacity = 1
+    cluster[index].scale = 1
     cluster[index].quickslots = {}
 
     Save()
@@ -68,6 +69,25 @@ end
 function SetSnapGap(value)
 
     Data.gap = value
+
+    Save()
+
+end
+
+-- per bar rather than per trait line, so one bar can be big and another small.
+-- nothing defaults it on load: Utils.ScaleOf treats a missing value as 1, which
+-- is what keeps savefiles and layout snapshots written before this existed
+-- working without a migration.
+function ScaleWindow(index, scale)
+
+    local cluster = Data[Data.activ]
+
+    if cluster[index] == nil then
+        Turbine.Shell.WriteLine("No window at index " .. index .. ".")
+        return
+    end
+
+    cluster[index].scale = scale
 
     Save()
 

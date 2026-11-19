@@ -49,6 +49,8 @@ function LoadLayout(name)
             Data[Data.activ][index].quickslots = {}
             Data[Data.activ][index].color = window_data.color
             Data[Data.activ][index].opacity = window_data.opacity
+            -- or 1 for snapshots saved before bars could be scaled
+            Data[Data.activ][index].scale = window_data.scale or 1
 
         end
 
@@ -78,6 +80,7 @@ function SaveLayout(name)
         Layout[name][index].height =  window_data.height
         Layout[name][index].color =  window_data.color
         Layout[name][index].opacity =  window_data.opacity
+        Layout[name][index].scale =  Utils.ScaleOf( window_data )
     
     end
 

@@ -107,6 +107,18 @@ function Cluster:Move()
 
 end
 
+-- Data.gap changed under us. only the frames have to react - the snap maths
+-- reads the gap at drag time, so it needs no telling - and they react even with
+-- move mode off, because Apply decides for itself that there is nothing to show
+-- then.
+function Cluster:GapChanged()
+
+    for index, window in pairs(self.windows) do
+        window:RefreshGapFrame()
+    end
+
+end
+
 function Cluster:Lock()
 
     self.locked = not(self.locked)
@@ -250,6 +262,20 @@ function Cluster:ClearSelection()
 end
 
 
+-- make one bar the whole selection
+function Cluster:SelectOnly( index )
+
+    if self.windows[index] == nil then
+        return
+    end
+
+    self.selection = { [index] = true }
+
+    self:ApplySelection()
+
+end
+
+
 function Cluster:SelectAll()
 
     for index, window in pairs(self.windows) do
@@ -336,7 +362,7 @@ function Cluster:SnapDelta( members, dx, dy )
         local group_centre_x = left + math.floor( ( right - left ) / 2 )
         local group_centre_y = top  + math.floor( ( bottom - top ) / 2 )
 
-        local gap = Data.gap or 0
+        local gap = Utils.GapSize()
 
         -- the screen centre candidates go first so they win a tie against a bar
         local candidates_x = {

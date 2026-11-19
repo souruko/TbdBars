@@ -7,6 +7,7 @@ function PrintHelp()
     h("add <w> <h>",               "Add a new bar (1-20 slots wide/tall)")
     h("remove <index>",            "Remove a bar")
     h("resize <index> <w> <h>",    "Resize a bar")
+    h("scale <factor>",            "Scale the selected bars (0.5 to 5, two decimals)")
     h("color <index> <r> <g> <b>", "Set bar background color (0-255 each)")
     h("opacity <index> <0-100>",   "Set bar opacity")
     h("move",                      "Toggle move mode")
@@ -20,15 +21,10 @@ function PrintHelp()
     h("layout load <name>",        "Load a saved layout")
     h("layout delete <name>",      "Delete a saved layout")
     h("layout overview",           "List all saved layouts")
-    Turbine.Shell.WriteLine("  In move mode, ctrl+left-click a handle to add or remove that bar")
-    Turbine.Shell.WriteLine("  from the selection. Dragging any selected handle moves them all.")
-    Turbine.Shell.WriteLine("  Bars snap to the screen centre lines and to each other while")
-    Turbine.Shell.WriteLine("  dragging; hold Alt to drag without snapping. A bar coming to rest")
-    Turbine.Shell.WriteLine("  beside another leaves the gap set by /tbd gap.")
-    Turbine.Shell.WriteLine("  Dragging a shortcut off a bar does not empty the slot - the game")
-    Turbine.Shell.WriteLine("  hands out a copy and keeps the original. Use /tbd clear instead.")
-    Turbine.Shell.WriteLine("  Slots are numbered left to right, then top to bottom; /tbd list")
-    Turbine.Shell.WriteLine("  shows how many of each bar's slots are filled.")
+    Turbine.Shell.WriteLine("  In move mode, left-click a handle to select just that bar, or")
+    Turbine.Shell.WriteLine("  ctrl+left-click to add or remove it from the selection. Dragging")
+    Turbine.Shell.WriteLine("  any selected handle moves them all, and /tbd scale applies to")
+    Turbine.Shell.WriteLine("  whatever is selected.")
 end
 
 function ListWindows()
@@ -52,7 +48,13 @@ function ListWindows()
                 filled = filled + 1
             end
         end
-        Turbine.Shell.WriteLine("  #" .. idx .. ": " .. window_data.width .. "x" .. window_data.height ..
+        -- only shown when it is not 1, so an unscaled setup reads as it always did
+        local scale = Utils.ScaleOf( window_data )
+        local scale_text = ""
+        if scale ~= 1 then
+            scale_text = " x" .. scale
+        end
+        Turbine.Shell.WriteLine("  #" .. idx .. ": " .. window_data.width .. "x" .. window_data.height .. scale_text ..
             " at (" .. window_data.left .. ", " .. window_data.top .. "), " ..
             filled .. "/" .. (window_data.width * window_data.height) .. " slots filled" .. mark)
     end
@@ -72,7 +74,13 @@ function command:Execute( _, str )
     local list = {}
     local i = 1
 
-    for word in str:gmatch( "%w+" ) do
+    -- %S+ and not %w+. %w is alphanumerics only, so the old pattern split
+    -- "3.05" into "3" and "05" and /tbd scale 3.05 would silently have scaled
+    -- by 3. every command either runs its arguments through tonumber or
+    -- compares them against fixed words, and layout names were only ever
+    -- restricted to word characters by this very pattern, so widening it takes
+    -- nothing away - it also makes /tbd layout save my-layout work.
+    for word in str:gmatch( "%S+" ) do
         list[ i ] = word
         i = i + 1
     end
@@ -152,6 +160,59 @@ function command:Execute( _, str )
         ResizeWindow(idx, width, height)
         Activ_Cluster:Reload()
         Turbine.Shell.WriteLine("Resized window #" .. idx .. " to " .. width .. "x" .. height .. ".")
+
+    elseif cmd == "scale" then
+
+        if list[ 2 ] == nil then
+            Turbine.Shell.WriteLine("Usage: /tbd scale <factor>  (" .. SCALE_MIN .. " to " .. SCALE_MAX ..
+                ", two decimals, applies to the selected bars)")
+            for idx, window_data in ipairs(Data[Data.activ]) do
+                Turbine.Shell.WriteLine("  #" .. idx .. ": x" .. Utils.ScaleOf(window_data))
+            end
+            return
+        end
+
+        local scale = tonumber(list[ 2 ])
+
+        if scale == nil or scale < SCALE_MIN or scale > SCALE_MAX then
+            Turbine.Shell.WriteLine("Scale must be a number between " .. SCALE_MIN .. " and " .. SCALE_MAX .. ".")
+            return
+        end
+
+        -- two decimals is the advertised precision, and finer than that is
+        -- under a pixel at this slot size anyway
+        scale = math.floor( ( scale * 100 ) + 0.5 ) / 100
+
+        -- indices, not window objects: Reload below destroys every window and
+        -- builds new ones, so anything held across it is a stale orphan
+        local targets = {}
+
+        for i, window in ipairs( Activ_Cluster:SelectedWindows() ) do
+            targets[#targets + 1] = window.index
+        end
+
+        if #targets == 0 then
+            Turbine.Shell.WriteLine("No bars selected. Run /tbd select <index>, or /tbd move and click a handle.")
+            return
+        end
+
+        for i, index in ipairs(targets) do
+            ScaleWindow( index, scale )
+        end
+
+        Activ_Cluster:Reload()
+
+        -- a scale change never goes through MoveTo, which is the only clamp
+        -- site, so a bar scaled up at the edge of the screen would hang off it.
+        -- a zero move re-clamps and leaves the top left exactly where it was
+        -- unless the far edge has left the screen.
+        for i, index in ipairs(targets) do
+            if Activ_Cluster.windows[index] ~= nil then
+                Activ_Cluster.windows[index]:MoveBy( 0, 0 )
+            end
+        end
+
+        Turbine.Shell.WriteLine("Scaled " .. #targets .. " bar(s) to x" .. scale .. ".")
 
     elseif cmd == "color" then
 
@@ -252,10 +313,16 @@ function command:Execute( _, str )
 
         SetSnapGap(gap)
 
+        Activ_Cluster:GapChanged()
+
         if gap == 0 then
             Turbine.Shell.WriteLine("Snap gap cleared - bars now snap flush against each other.")
         else
             Turbine.Shell.WriteLine("Snap gap set to " .. gap .. "px.")
+
+            if not Activ_Cluster.moving then
+                Turbine.Shell.WriteLine("Run /tbd move to see it drawn around the bars.")
+            end
         end
 
     elseif cmd == "clear" then

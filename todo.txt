@@ -1,6 +1,4 @@
 
-- scaling?
-
 - resizing a bar reflows the row-major slot index, so shortcuts shift position,
   and narrowing orphans the entries past the new slot count (never restored,
   never deleted, reappear if the bar is widened again). needs a key scheme that

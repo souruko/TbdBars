@@ -29,6 +29,26 @@ Activ_Cluster = nil
 FRAME = 1
 QS_SIZE = 36
 
+-- a quickslot does not fill its own control. it draws its icon inset from the
+-- TOP LEFT and flush to the bottom right: a 35px control carries 32px of art at
+-- offset 3, trailing edge 0. measured in game 2026-11-19 by scaling a bar to 2x
+-- and reading the pixels back - a 70px control drew 64px of art at offset 6, so
+-- stretch mode scales the inset along with everything else.
+--
+-- this is the whole reason the layout maths is lop-sided. the border a player
+-- sees on the left is the bar's own padding PLUS this inset, and on the right it
+-- is the padding alone, so an even-looking bar needs uneven numbers. get this
+-- wrong in the tidy direction and every bar gains a fat edge top left and a thin
+-- one bottom right.
+QS_ART_INSET = 3
+
+-- how far /tbd scale may take a single bar. 0.5 is the floor primeplugins
+-- ships on its own quickslot scale slider; 5 is headroom. the source icon art
+-- is 32x32 inside a 35x35 template, so past about 3 it is a soft bilinear
+-- upscale - usable, but do not expect it to look sharp.
+SCALE_MIN = 0.5
+SCALE_MAX = 5
+
 -- move handle colours. never mutate these, Turbine.UI.Color.X is shared
 -- process wide. cyan is picked over orange so it cannot read as "a slightly
 -- different yellow", and it still keeps the handle's black label readable.
@@ -48,6 +68,18 @@ GUIDE_THICKNESS    = 4
 GUIDE_COLOR        = MOVE_HEADER_COLOR_SELECTED
 GUIDE_COLOR_ACTIVE = Turbine.UI.Color.White
 GUIDE_COLOR_CORE   = Turbine.UI.Color(0.1, 0.1, 0.1)
+
+-- the gap frame drawn around every bar in move mode: a band exactly Data.gap
+-- pixels thick hugging the bar on all four sides, which is the ground a
+-- neighbour will be held off by when it snaps alongside.
+--
+-- magenta because the three colours already in use are taken and have to stay
+-- told apart: yellow is a handle, cyan a selected handle, white a live guide
+-- line. and translucent because the top band lands in the same 20px strip as
+-- the move handle - the handle has to stay readable through it, and a solid
+-- band would read as a bar rather than as empty ground.
+GAP_FRAME_COLOR   = Turbine.UI.Color(1, 0.2, 1)
+GAP_FRAME_OPACITY = 0.45
 
 ClassSpecializationString = "You have acquired the Class Specialization Bonus Trait:"
 

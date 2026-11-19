@@ -1,5 +1,5 @@
 **TbdBars** — LOTRO Quickslot Bar Plugin
-Author: Souru | Version: 0.0.6
+Author: Souru | Version: 0.0.7
 
 Displays configurable quickslot bars that automatically swap when you switch your active class specialization (trait line: Red / Yellow / Blue).
 
@@ -9,7 +9,8 @@ Displays configurable quickslot bars that automatically swap when you switch you
 - Multiple independent bar windows per trait line
 - Bars swap automatically on specialization change — no manual action needed
 - Each bar is independently resizable (in quickslot-unit increments) and freely repositionable
-- Ctrl+click to select several bars and drag them as one block, keeping their relative spacing
+- Each bar carries its own scale, from half size to five times, icons included
+- Click a bar's handle to select it, Ctrl+click to select several, and drag them as one block, keeping their relative spacing
 - Bars snap to the screen centre lines and to each other while dragging, with centre guide lines
 - A configurable gap, so bars settle a set number of pixels clear of each other instead of touching
 - Named layout snapshots: save and restore window geometry across sessions
@@ -57,6 +58,7 @@ All commands use `/tbd` or `/tbdbars` as the prefix.
 `/tbd add <width> <height>` — Add a new quickslot bar (size in quickslot units)
 `/tbd remove <index>` — Remove a bar by its index
 `/tbd resize <index> <width> <height>` — Resize an existing bar
+`/tbd scale <factor>` — Scale the selected bars and their icons (0.5–5, two decimals)
 `/tbd color <index> <r> <g> <b>` — Set a bar's background colour (0–255 per channel)
 `/tbd opacity <index> <0-100>` — Set a bar's opacity as a percentage
 `/tbd move` — Toggle move mode (drag handles appear on all bars)
@@ -78,6 +80,9 @@ All commands use `/tbd` or `/tbdbars` as the prefix.
 /tbd add 3 2           -- adds a 3×2 bar
 /tbd remove 2          -- removes bar #2 from the active trait line
 /tbd select 1 3        -- selects bars #1 and #3
+/tbd scale 3           -- makes the selected bars three times normal size
+/tbd scale 1.25        -- a quarter bigger
+/tbd scale             -- report what every bar is set to
 /tbd gap 5             -- bars now snap 5px clear of each other
 /tbd layout save main  -- saves current geometry as "main"
 /tbd layout load main  -- restores "main" layout
@@ -87,16 +92,47 @@ All commands use `/tbd` or `/tbdbars` as the prefix.
 
 **Moving several bars at once**
 
-Turn on move mode with `/tbd move`, then hold **Ctrl** and left-click a bar's yellow handle to add
-it to the selection — the handle turns cyan. Ctrl+click it again to drop it back out. Dragging any
+Turn on move mode with `/tbd move`, then left-click a bar's yellow handle to select it — the handle
+turns cyan and every other bar is deselected. Hold **Ctrl** and left-click to add a bar to the
+selection instead of replacing it; Ctrl+click a selected bar to drop it back out. Dragging any
 selected handle moves every selected bar together and keeps their spacing unchanged.
 
-Dragging a handle that is *not* selected clears the selection and moves just that bar, so plain
-dragging works exactly as it always did. `/tbd select all` grabs every bar at once, and
+A plain click on a bar that is *already* part of the selection leaves the selection alone, so a
+group drag can be started from any of its handles. `/tbd select all` grabs every bar at once, and
 `/tbd select <index>` reaches a bar whose handle is hidden under another one.
 
 The selection covers only the trait line you are currently on, and is cleared when you leave move
 mode or remove a bar.
+
+---
+
+**Scaling bars**
+
+`/tbd scale <factor>` resizes bars and the skill icons in them. Scale is a property of each bar, not
+of the whole trait line, and the command applies to whatever is selected — so the workflow is the
+same as moving bars:
+
+```
+/tbd move              -- handles appear
+                       -- click the handle of the bar you want
+/tbd scale 3           -- that bar is now three times normal size
+```
+
+`/tbd select 1 3` then `/tbd scale 1.5` scales several at once, and `/tbd scale` on its own lists
+every bar's current factor. Anything from `0.5` to `5` is accepted, to two decimal places.
+
+A bar keeps its top-left corner where it was, growing right and down, so scaling never moves a bar
+out from under you. If the result would hang off the screen it slides back on. Bars that were
+snapped neatly against each other will overlap after one of them grows — drag them apart again and
+they will snap back together at the new size.
+
+The move handle and the snap gap stay the same size at every scale: the handle has to stay the same
+20 pixels tall for a bar's saved position to keep meaning the same thing, and `/tbd gap` is measured
+in real screen pixels.
+
+One caveat worth knowing: the game's skill icons are small images, so scaling up stretches them.
+Up to about three times they hold up; much past that and they look soft. Nothing is wrong — there is
+simply no higher-resolution artwork for a plugin to ask for.
 
 ---
 
@@ -122,6 +158,14 @@ So set the spacing once and then just drag:
 ```
 
 The gap is saved per character, and it does not affect the screen centre lines — centred is centred.
+
+While move mode is on, the gap is drawn as a magenta frame around every bar — a band exactly as
+thick as the gap, hugging the bar on all four sides. That band is the ground a neighbour will be
+held off by, so two bars are at the set spacing when their frames touch. Change the gap with
+`/tbd gap` and the frames change with it; at `/tbd gap 0` bars snap flush and there is no frame.
+
+The frames are see-through, so the move handle underneath the top edge of one stays readable, and
+they never take a mouse click — dragging a bar works exactly as it does without them.
 
 Bars can no longer be dragged off the screen; they stop with the move handle still reachable. The
 handle occupies the 20 pixels above the bar, so a bar's own top edge cannot go higher than `y = 20`.

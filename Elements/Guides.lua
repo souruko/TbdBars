@@ -8,6 +8,8 @@
 
     every piece is SetMouseVisible(false): a mouse visible guide would sit on
     top of the bars and eat the drag.
+
+    the gap is drawn per bar, by GapFrame, not here.
 ]]
 
 Guides = class()

@@ -72,11 +72,14 @@ function QuickslotWindow:Constructor(data, index, cluster)
     -- to lock it again afterwards
     self.locked = ( cluster ~= nil and cluster.locked == true )
 
-    local width = ( QS_SIZE * self.data.width) + ( FRAME * 4 )
-    local height = ( QS_SIZE * self.data.height) + ( FRAME * 4 )
+    -- taken from Utils rather than recomputed here. the two used to be separate
+    -- copies of the same formula, which was survivable while every bar was the
+    -- same size and is not now that each one carries its own scale.
+    local _, _, width, height = Utils.BarRect( self.data )
+    local window_width, window_height = Utils.WindowSize( self.data )
 
     self:SetPosition(self.data.left, self.data.top)
-    self:SetSize(width, height + MOVE_HEADER_HEIGHT)
+    self:SetSize(window_width, window_height)
     self:SetMouseVisible(false)
 
     self.move_header = Turbine.UI.Window()
@@ -91,15 +94,18 @@ function QuickslotWindow:Constructor(data, index, cluster)
             return
         end
 
-        -- modifier held: toggle this bar in the selection, do not start a drag
+        -- modifier held: add this bar to the selection (or drop it back out of
+        -- it), do not start a drag
         if Utils.IsAddToSelectionDown( args ) then
             self.cluster:ToggleSelected( self.index )
             return
         end
 
-        -- dragging an unselected bar drops the old selection
+        -- a plain click selects this bar alone. clicking one that is already
+        -- part of a selection keeps the selection, so a group drag can start
+        -- from any of its members
         if not self.cluster:IsSelected( self.index ) then
-            self.cluster:ClearSelection()
+            self.cluster:SelectOnly( self.index )
         end
 
         self.dragging = true
@@ -120,6 +126,11 @@ function QuickslotWindow:Constructor(data, index, cluster)
             self.dragging = false
         end
     end
+
+    -- the gap frame reaches outside this window, so it cannot be a child of it:
+    -- a Window clips its children. it is its own set of top level windows,
+    -- owned here and closed in Closing.
+    self.gap_frame = GapFrame()
 
     self.move_label = Turbine.UI.Label()
     self.move_label:SetParent(self.move_header)
@@ -176,6 +187,21 @@ function QuickslotWindow:MoveTo( x, y )
 
     self:SetPosition( x, y )
     self:UpdateMoveLabel()
+    self:RefreshGapFrame()
+
+end
+
+
+-- put the gap frame back around the bar's current rect. called from MoveTo, so
+-- it tracks a drag for free - MoveTo is the single writer of position - and from
+-- Move(), /tbd gap and anything else that changes the gap or the bar's size.
+--
+-- move mode is read off the cluster rather than mirrored into a field here: the
+-- cluster is where the flag lives, and a second copy would be one more thing to
+-- keep in step on a Reload.
+function QuickslotWindow:RefreshGapFrame()
+
+    self.gap_frame:Apply( self.data, self.cluster ~= nil and self.cluster.moving == true )
 
 end
 
@@ -221,7 +247,63 @@ function QuickslotWindow:ApplyShortcut( quickslot, entry )
 
     end )
 
+    -- outside the pcall, so a SetShortcut that throws cannot leave the slot at
+    -- the wrong size
+    self:ApplySlotSize( quickslot )
+
     quickslot.restoring = false
+
+end
+
+
+-- render this slot at the bar's scale.
+--
+-- SetSize alone gives a big hit box around art that is still 36px: the icon
+-- only scales under stretch mode 1, and the api is explicit that the control
+-- must be at the image's original size *before* the mode is assigned, because
+-- that is the size everything afterwards is measured against. the other modes
+-- are all dead ends - 2 and 4 stop the control receiving mouse events at all,
+-- which would kill the click that fires the skill, and 0 and 3 crop instead of
+-- scaling. primeplugins ships a 0.5x-3x quickslot scale slider built on exactly
+-- this (RaidTools/PrimeUITools/SkillBarQuickslots.lua:170-182).
+--
+-- the bounce through the native size is mandatory, not tidiness. lotro drops a
+-- setter whose value has not changed - the same trap behind ForceZOrder and
+-- ForceOpacity elsewhere - so on a re-apply both SetStretchMode(1) and
+-- SetSize(target) would be silent no-ops and the art would never come back.
+-- moving the size to native first makes both writes real.
+--
+-- at scale 1 this returns untouched: SlotArt is 35, which is already the native
+-- size, so an unscaled bar never enters stretch mode at all and its slots keep
+-- whatever size the client gives them.
+function QuickslotWindow:ApplySlotSize( quickslot )
+
+    if Utils.ScaleOf( self.data ) == 1 then
+        return
+    end
+
+    -- a slot that has never been laid out can report 0, and 0 as the reference
+    -- size would make the stretch meaningless. fall back to the stock template
+    -- size - QS_SIZE is that plus its gutter pixel - rather than giving up,
+    -- because giving up here looks exactly like "scaling does not work".
+    local native_width = tonumber( quickslot.native_width ) or 0
+    local native_height = tonumber( quickslot.native_height ) or 0
+
+    if native_width <= 0 then
+        native_width = QS_SIZE - FRAME
+    end
+
+    if native_height <= 0 then
+        native_height = QS_SIZE - FRAME
+    end
+
+    -- scaled straight off the stock 35, not derived from the rounded pitch, so
+    -- the art lands on an exact multiple of its own native size
+    local target = Utils.SlotArt( self.data )
+
+    quickslot:SetSize( native_width, native_height )
+    quickslot:SetStretchMode( 1 )
+    quickslot:SetSize( target, target )
 
 end
 
@@ -249,6 +331,14 @@ function QuickslotWindow:OnShortcutChanged( quickslot )
     if quickslot.restoring then
         return
     end
+
+    -- the game latches a shortcut's art to the slot's geometry at the moment it
+    -- is assigned, so a drop puts the icon back at native size. re-stretch
+    -- before anything else here, including the SameShortcut early return below:
+    -- dropping the skill a slot already holds changes nothing we save, but it
+    -- still perturbs the art. primeplugins re-applies from its own
+    -- ShortcutChanged handler for the same reason (PrimeUIQuickSlot.lua:108-113).
+    self:ApplySlotSize( quickslot )
 
     local saved = self.data.quickslots[ quickslot.index ]
     local shortcut_type, shortcut_data = SlotFields( quickslot )
@@ -322,6 +412,11 @@ function QuickslotWindow:Move( state )
 
     self.move_header:SetVisible(state)
 
+    -- after the header, and reading the cluster's flag rather than `state`,
+    -- because Cluster:Move sets that flag before it calls round the windows -
+    -- so the two always agree and there is one source of truth
+    self:RefreshGapFrame()
+
 end
 
 -- the handler consults self.locked at call time, so locking is just a flag now -
@@ -364,12 +459,18 @@ end
 
 function QuickslotWindow:CreateQuickslots()
 
+    local pitch = Utils.SlotPitch( self.data )
+    local lead = Utils.SlotLead( self.data )
+
     for i=1, self.data.height, 1 do
 
         for j=1, self.data.width, 1 do
 
-            local left = FRAME + ( (j - 1) * QS_SIZE )
-            local top = FRAME + ( (i - 1) * QS_SIZE )
+            -- the grid starts at the small SlotLead while BarRect ends at the
+            -- larger SlotEdge. deliberately uneven: the quickslot insets its own
+            -- art from the top left, so this is what renders as an even border
+            local left = lead + ( (j - 1) * pitch )
+            local top = lead + ( (i - 1) * pitch )
             local index = #self.quickslots + 1
 
             self.quickslots[index] = Turbine.UI.Lotro.Quickslot()
@@ -377,6 +478,13 @@ function QuickslotWindow:CreateQuickslots()
             self.quickslots[index]:SetPosition(left, top)
             self.quickslots[index].index = index
             self.quickslots[index].window = self
+
+            -- the slot's size before anything has resized it, stashed on the
+            -- slot the same way index and window are. read rather than
+            -- hardcoded as 35, and captured here because ApplySlotSize below
+            -- needs it and every later call would read back a scaled size.
+            self.quickslots[index].native_width,
+            self.quickslots[index].native_height = self.quickslots[index]:GetSize()
 
             -- applied even when there is nothing saved, so a slot that was
             -- cleared comes back explicitly blank after a rebuild.
@@ -409,6 +517,11 @@ function QuickslotWindow:Closing()
     self:SetVisible(false)
     self.background:SetVisible(false)
     self.move_header:SetVisible(false)
+
+    -- the frame's bands are top level windows, so nothing tears them down with
+    -- this one. a Reload closes every window and builds new ones, which without
+    -- this would leave a magenta frame on screen around nothing.
+    self.gap_frame:Close()
 
     self.background:Close()
     self.move_header:Close()
