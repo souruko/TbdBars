@@ -1,5 +1,5 @@
 **TbdBars** — LOTRO Quickslot Bar Plugin
-Author: Souru | Version: 0.0.7
+Author: Souru | Version: 0.0.8
 
 Displays configurable quickslot bars that automatically swap when you switch your active class specialization (trait line: Red / Yellow / Blue).
 
@@ -59,7 +59,7 @@ All commands use `/tbd` or `/tbdbars` as the prefix.
 `/tbd remove <index>` — Remove a bar by its index
 `/tbd resize <index> <width> <height>` — Resize an existing bar
 `/tbd scale <factor>` — Scale the selected bars and their icons (0.5–5, two decimals)
-`/tbd color <index> <r> <g> <b>` — Set a bar's background colour (0–255 per channel)
+`/tbd color <index> <r> <g> <b> [a]` — Set a bar's background colour (0–255 per channel); an optional fourth value is alpha
 `/tbd opacity <index> <0-100>` — Set a bar's opacity as a percentage
 `/tbd move` — Toggle move mode (drag handles appear on all bars)
 `/tbd select all` / `/tbd select none` — Select or deselect every bar

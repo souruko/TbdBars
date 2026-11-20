@@ -3,6 +3,11 @@ function ColorFix(color)
     if color == nil then
         return nil
     end
+	-- A is optional (older saves and 3-value /tbd color have none).
+	-- the four-argument constructor takes alpha FIRST: (a, r, g, b)
+	if color.A ~= nil then
+		return Turbine.UI.Color(color.A, color.R, color.G, color.B)
+	end
 	return Turbine.UI.Color(color.R, color.G, color.B)
 end
 

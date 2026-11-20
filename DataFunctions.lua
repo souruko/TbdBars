@@ -33,7 +33,8 @@ function RemoveWindow( index )
 
 end
 
-function SetWindowColor(index, r, g, b)
+-- a is optional; nil leaves the colour fully opaque
+function SetWindowColor(index, r, g, b, a)
 
     local cluster = Data[Data.activ]
 
@@ -43,6 +44,9 @@ function SetWindowColor(index, r, g, b)
     end
 
     cluster[index].color = {R = r / 255, G = g / 255, B = b / 255}
+    if a ~= nil then
+        cluster[index].color.A = a / 255
+    end
 
     Save()
 

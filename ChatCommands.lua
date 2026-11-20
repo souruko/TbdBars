@@ -8,7 +8,7 @@ function PrintHelp()
     h("remove <index>",            "Remove a bar")
     h("resize <index> <w> <h>",    "Resize a bar")
     h("scale <factor>",            "Scale the selected bars (0.5 to 5, two decimals)")
-    h("color <index> <r> <g> <b>", "Set bar background color (0-255 each)")
+    h("color <index> <r> <g> <b> [a]", "Set bar background color, optional alpha (0-255 each)")
     h("opacity <index> <0-100>",   "Set bar opacity")
     h("move",                      "Toggle move mode")
     h("select all|none",           "Select or deselect every bar")
@@ -216,24 +216,35 @@ function command:Execute( _, str )
 
     elseif cmd == "color" then
 
-        if list[2] == nil or list[3] == nil or list[4] == nil or list[5] == nil then
-            Turbine.Shell.WriteLine("Usage: /tbd color <index> <r> <g> <b>  (0-255 each)")
+        -- 3 colour values is r g b, a 4th is alpha (all 0-255)
+        local usage = "Usage: /tbd color <index> <r> <g> <b> [a]  (0-255 each)"
+        if list[2] == nil or list[5] == nil or list[7] ~= nil then
+            Turbine.Shell.WriteLine(usage)
             return
         end
         local idx = tonumber(list[2])
-        local r = tonumber(list[3])
-        local g = tonumber(list[4])
-        local b = tonumber(list[5])
-
-        if idx == nil or r == nil or g == nil or b == nil
-            or r < 0 or r > 255 or g < 0 or g > 255 or b < 0 or b > 255 then
-            Turbine.Shell.WriteLine("Invalid parameters. R, G, B must be between 0 and 255.")
+        local channels = {}
+        for i = 3, 6 do
+            if list[i] ~= nil then
+                local v = tonumber(list[i])
+                if v == nil or v < 0 or v > 255 then
+                    Turbine.Shell.WriteLine("Invalid parameters. R, G, B and A must be between 0 and 255.")
+                    return
+                end
+                channels[#channels + 1] = v
+            end
+        end
+        if idx == nil then
+            Turbine.Shell.WriteLine(usage)
             return
         end
+        local r, g, b, a = channels[1], channels[2], channels[3], channels[4]
 
-        SetWindowColor(idx, r, g, b)
+        SetWindowColor(idx, r, g, b, a)
         Activ_Cluster:Reload()
-        Turbine.Shell.WriteLine("Set color of window #" .. idx .. " to (" .. r .. ", " .. g .. ", " .. b .. ").")
+        local shown = r .. ", " .. g .. ", " .. b
+        if a ~= nil then shown = shown .. ", " .. a end
+        Turbine.Shell.WriteLine("Set color of window #" .. idx .. " to (" .. shown .. ").")
 
     elseif cmd == "opacity" then
 

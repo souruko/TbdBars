@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.8] - 2026-11-20
+
+### Added
+- `/tbd color` takes an optional fourth number for transparency. `/tbd color 1 0 0 0` still gives bar #1 a solid black background, and `/tbd color 1 0 0 0 128` makes it about half see-through. Like the colour itself it runs from 0 (invisible) to 255 (solid), and leaving it off gives you a solid colour just as before. It works on top of `/tbd opacity`, so a half-transparent background on a bar at 50% opacity ends up at about a quarter.
+
 ## [0.0.7] - 2026-11-19
 
 ### Added

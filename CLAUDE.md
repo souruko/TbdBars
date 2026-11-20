@@ -42,7 +42,7 @@ The primary working directory **is** the live game plugin directory (via Steam P
 /tbd remove <index>             -- remove a window by index
 /tbd resize <index> <w> <h>     -- resize a window
 /tbd scale <factor>             -- scale the selected bars, 0.5-5, two decimals
-/tbd color <index> <r> <g> <b>  -- set background colour (0-255 per channel)
+/tbd color <index> <r> <g> <b> [a]  -- set background colour, optional alpha (0-255 per channel)
 /tbd opacity <index> <0-100>    -- set opacity
 /tbd move                       -- toggle move mode (shows drag handles)
 /tbd select all|none            -- select or deselect every window
